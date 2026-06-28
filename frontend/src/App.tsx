@@ -13,6 +13,24 @@ interface SlimeData {
   coins: number
   pomodoroCount: number
   status: 'happy' | 'slightly_happy' | 'normal' | 'hungry' | 'dying'
+  updatedAt: string
+}
+
+// Slime.tsx と同じ計算
+const DECAY_PER_MIN = 2 / 5
+function calcWorkTabWarning(hunger: number, updatedAt: string): string {
+  const elapsed = (Date.now() - new Date(updatedAt).getTime()) / 60000
+  const effective = Math.max(0, hunger - elapsed * DECAY_PER_MIN)
+  const thresholds = [
+    { value: 35, label: 'ちょっと元気がなくなる' },
+    { value: 15, label: '瀕死' },
+  ]
+  const next = thresholds.find(t => effective > t.value)
+  if (!next) return '⚠ CRITICAL'
+  const min = (effective - next.value) / DECAY_PER_MIN
+  if (min < 1) return `まもなく${next.label}！`
+  if (min < 60) return `⏱ ${Math.floor(min)}分後に${next.label}`
+  return `⏱ ${Math.floor(min / 60)}h${Math.floor(min % 60)}m後に${next.label}`
 }
 
 export default function App() {
@@ -25,11 +43,7 @@ export default function App() {
     const res = await fetch('/api/slime')
     const data = await res.json()
     setSlime(data)
-    if (data.status === 'dying' || data.status === 'hungry') {
-      setSlimeAlert(true)
-    } else {
-      setSlimeAlert(false)
-    }
+    setSlimeAlert(data.status === 'dying' || data.status === 'hungry')
   }, [])
 
   useEffect(() => {
@@ -77,31 +91,28 @@ export default function App() {
   if (!slime) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
-        <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 14, color: '#7c3aed', animation: 'pulse 1s infinite' }}>
+        <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 14, color: '#7c3aed' }}>
           LOADING...
         </div>
       </div>
     )
   }
 
+  const workTabWarning = calcWorkTabWarning(slime.hunger, slime.updatedAt)
+
   return (
     <div style={{ minHeight: '100vh', background: 'var(--color-bg)', padding: 24 }}>
-      {/* ヘッダー */}
       <div style={{ textAlign: 'center', marginBottom: 24 }}>
         <h1 style={{
-          fontFamily: 'var(--pixel-font)',
-          fontSize: 16,
-          color: '#ffffff',
-          letterSpacing: 3,
-          textShadow: '0 0 16px #7c3aed',
-          margin: 0,
+          fontFamily: 'var(--pixel-font)', fontSize: 16, color: '#ffffff',
+          letterSpacing: 3, textShadow: '0 0 16px #7c3aed', margin: 0,
         }}>
           🍅 POMO-SLIME
         </h1>
       </div>
 
-      {/* タブ切り替え */}
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 0, marginBottom: 28 }}>
+      {/* タブ */}
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 28 }}>
         {(['work', 'slime'] as Tab[]).map(t => (
           <button
             key={t}
@@ -140,13 +151,11 @@ export default function App() {
           border: '3px solid #a78bfa',
           boxShadow: '4px 4px 0 #000',
           zIndex: 100,
-          letterSpacing: 1,
         }}>
           {notification}
         </div>
       )}
 
-      {/* コンテンツ */}
       <div style={{ maxWidth: 520, margin: '0 auto' }}>
         {tab === 'work' ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -155,16 +164,24 @@ export default function App() {
               pomodoroCount={slime.pomodoroCount}
               onBreakStart={handleBreakStart}
             />
-            {/* 作業中はスライムの最低限の情報だけ小さく表示 */}
-            <div className="pixel-box" style={{ padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 8, color: '#6b7280' }}>
-                SLIME STATUS
+            {/* スライムの状態を小さく表示 */}
+            <div className="pixel-box" style={{ padding: '12px 20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 8, color: '#6b7280' }}>SLIME STATUS</div>
+                <div style={{ display: 'flex', gap: 16 }}>
+                  <span style={{ fontFamily: 'var(--pixel-font)', fontSize: 8, color: '#fbbf24' }}>🪙 {slime.coins}</span>
+                  <span style={{ fontFamily: 'var(--pixel-font)', fontSize: 8, color: slimeAlert ? '#ef4444' : '#22c55e' }}>
+                    {slimeAlert ? '⚠ HUNGRY' : '♥ OK'}
+                  </span>
+                </div>
               </div>
-              <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-                <span style={{ fontFamily: 'var(--pixel-font)', fontSize: 8, color: '#fbbf24' }}>🪙 {slime.coins}</span>
-                <span style={{ fontFamily: 'var(--pixel-font)', fontSize: 8, color: slimeAlert ? '#ef4444' : '#22c55e' }}>
-                  {slimeAlert ? '⚠ HUNGRY' : '♥ OK'}
-                </span>
+              {/* 空腹タイマー */}
+              <div style={{
+                fontFamily: 'var(--pixel-font)', fontSize: 8,
+                color: slimeAlert ? '#ef4444' : '#4b5563',
+                lineHeight: 1.6,
+              }}>
+                {workTabWarning}
               </div>
             </div>
             <div className="pixel-box" style={{ padding: '14px 20px' }}>

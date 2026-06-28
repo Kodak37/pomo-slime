@@ -6,10 +6,38 @@ interface SlimeData {
   coins: number
   pomodoroCount: number
   status: SlimeStatus
+  updatedAt: string
 }
 
 interface Props {
   slime: SlimeData
+}
+
+// 空腹度は5分ごとに2減る
+const DECAY_PER_MIN = 2 / 5
+
+const THRESHOLDS: { status: string; value: number; label: string }[] = [
+  { status: 'hungry',       value: 35, label: 'ちょっと元気がなくなる' },
+  { status: 'dying',        value: 15, label: '瀕死になる' },
+  { status: 'dead',         value: 0,  label: '干からびる' },
+]
+
+function calcTimeUntil(currentHunger: number, updatedAt: string): string | null {
+  const lastUpdate = new Date(updatedAt).getTime()
+  const now = Date.now()
+  const elapsedMin = (now - lastUpdate) / 60000
+  // 現在の実際の空腹度（decayは5分刻みなので近似）
+  const effectiveHunger = Math.max(0, currentHunger - elapsedMin * DECAY_PER_MIN)
+
+  const next = THRESHOLDS.find(t => effectiveHunger > t.value)
+  if (!next) return null
+
+  const minutesLeft = (effectiveHunger - next.value) / DECAY_PER_MIN
+  if (minutesLeft < 1) return `まもなく${next.label}！`
+  if (minutesLeft < 60) return `約${Math.floor(minutesLeft)}分後に${next.label}`
+  const h = Math.floor(minutesLeft / 60)
+  const m = Math.floor(minutesLeft % 60)
+  return `約${h}時間${m > 0 ? `${m}分` : ''}後に${next.label}`
 }
 
 const STATUS_CONFIG: Record<SlimeStatus, {
@@ -118,6 +146,7 @@ function SlimeEyes({ style }: { style: string }) {
 
 export function Slime({ slime }: Props) {
   const cfg = STATUS_CONFIG[slime.status] ?? STATUS_CONFIG.normal
+  const hungerWarning = calcTimeUntil(slime.hunger, slime.updatedAt)
 
   const hungerSegments = 10
   const filled = Math.round((slime.hunger / 100) * hungerSegments)
@@ -197,6 +226,22 @@ export function Slime({ slime }: Props) {
           {slime.hunger}/100
         </div>
       </div>
+
+      {/* 空腹タイマー */}
+      {hungerWarning && (
+        <div style={{
+          fontFamily: 'var(--pixel-font)',
+          fontSize: 8,
+          color: slime.status === 'hungry' || slime.status === 'dying' ? '#ef4444' : '#6b7280',
+          textAlign: 'center',
+          lineHeight: 1.8,
+          padding: '6px 10px',
+          background: 'rgba(0,0,0,0.25)',
+          border: `1px solid ${slime.status === 'hungry' || slime.status === 'dying' ? '#7f1d1d' : '#2d2d4e'}`,
+        }}>
+          ⏱ {hungerWarning}
+        </div>
+      )}
 
       {/* コイン */}
       <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 12, color: '#fbbf24' }}>
