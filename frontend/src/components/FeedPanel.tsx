@@ -4,39 +4,54 @@ interface Props {
 }
 
 const FOODS = [
-  { name: 'きのこ',   emoji: '🍄', cost: 5,  desc: '空腹度+10' },
-  { name: 'おにぎり', emoji: '🍙', cost: 15, desc: '空腹度+30' },
-  { name: 'ステーキ', emoji: '🥩', cost: 30, desc: '空腹度+60' },
+  { name: 'MUSHROOM', emoji: '🍄', cost: 5,  desc: 'HUNGER +10' },
+  { name: 'ONIGIRI',  emoji: '🍙', cost: 15, desc: 'HUNGER +30' },
+  { name: 'STEAK',    emoji: '🥩', cost: 30, desc: 'HUNGER +60' },
 ]
 
 export function FeedPanel({ coins, onFeed }: Props) {
   return (
-    <div className="p-6 bg-gray-800 rounded-2xl shadow-xl">
-      <h2 className="text-white font-bold text-lg mb-4">🍽 えさをあげる</h2>
-      <div className="flex flex-col gap-3">
-        {FOODS.map(food => (
-          <button
-            key={food.name}
-            onClick={() => onFeed(food.cost)}
-            disabled={coins < food.cost}
-            className="flex items-center justify-between px-4 py-3 bg-gray-700 hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">{food.emoji}</span>
-              <div className="text-left">
-                <div className="text-white font-bold">{food.name}</div>
-                <div className="text-gray-400 text-xs">{food.desc}</div>
-              </div>
-            </div>
-            <div className="text-yellow-400 font-bold text-sm">
-              🪙 {food.cost}
-            </div>
-          </button>
-        ))}
+    <div className="pixel-box p-5">
+      <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 10, color: '#a0aec0', marginBottom: 16, letterSpacing: 2 }}>
+        ▸ FEED SLIME
       </div>
-      <p className="text-gray-500 text-xs mt-3 text-center">
-        所持コイン: {coins}
-      </p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {FOODS.map(food => {
+          const canAfford = coins >= food.cost
+          return (
+            <button
+              key={food.name}
+              onClick={() => onFeed(food.cost)}
+              disabled={!canAfford}
+              className="pixel-btn"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '10px 14px',
+                background: canAfford ? '#1a1a35' : '#12121f',
+                color: canAfford ? '#e0e0e0' : '#4b5563',
+                borderColor: canAfford ? '#4a4a8a' : '#2d2d4e',
+                textAlign: 'left',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span style={{ fontSize: 20 }}>{food.emoji}</span>
+                <div>
+                  <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 8, marginBottom: 4 }}>{food.name}</div>
+                  <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 7, color: '#6b7280' }}>{food.desc}</div>
+                </div>
+              </div>
+              <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 9, color: '#fbbf24' }}>
+                🪙{food.cost}
+              </div>
+            </button>
+          )
+        })}
+      </div>
+      <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 8, color: '#4b5563', marginTop: 12, textAlign: 'right' }}>
+        COINS: {coins}
+      </div>
     </div>
   )
 }

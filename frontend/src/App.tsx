@@ -4,23 +4,32 @@ import { Slime } from './components/Slime'
 import { FeedPanel } from './components/FeedPanel'
 import './index.css'
 
+type Tab = 'work' | 'slime'
+
 interface SlimeData {
   id: number
   name: string
   hunger: number
   coins: number
   pomodoroCount: number
-  status: 'happy' | 'normal' | 'hungry' | 'dying'
+  status: 'happy' | 'slightly_happy' | 'normal' | 'hungry' | 'dying'
 }
 
 export default function App() {
+  const [tab, setTab] = useState<Tab>('work')
   const [slime, setSlime] = useState<SlimeData | null>(null)
   const [notification, setNotification] = useState<string | null>(null)
+  const [slimeAlert, setSlimeAlert] = useState(false)
 
   const fetchSlime = useCallback(async () => {
     const res = await fetch('/api/slime')
     const data = await res.json()
     setSlime(data)
+    if (data.status === 'dying' || data.status === 'hungry') {
+      setSlimeAlert(true)
+    } else {
+      setSlimeAlert(false)
+    }
   }, [])
 
   useEffect(() => {
@@ -42,12 +51,17 @@ export default function App() {
     })
     const data = await res.json()
     setSlime(data)
-    showNotif('🍅 ポモドーロ完了！コインを獲得しました')
+    showNotif('POMODORO DONE! +COINS')
+  }
+
+  function handleBreakStart() {
+    showNotif('BREAK TIME! CHECK YOUR SLIME →')
+    setTimeout(() => setTab('slime'), 1500)
   }
 
   async function handleFeed(cost: number) {
     if (!slime || slime.coins < cost) {
-      showNotif('コインが足りません…')
+      showNotif('NOT ENOUGH COINS...')
       return
     }
     const res = await fetch('/api/feed', {
@@ -57,51 +71,117 @@ export default function App() {
     })
     const data = await res.json()
     setSlime(data)
-    showNotif('😋 スライムがよろこんでいる！')
+    showNotif('SLIME IS HAPPY!')
   }
 
   if (!slime) {
     return (
-      <div className="flex items-center justify-center min-h-screen text-white">
-        <div className="text-2xl animate-pulse">読み込み中...</div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+        <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 14, color: '#7c3aed', animation: 'pulse 1s infinite' }}>
+          LOADING...
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen p-6" style={{ background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)' }}>
-      <h1 className="text-center text-3xl font-bold text-white mb-8">
-        🍅 ポモドーロ × スライム育成
-      </h1>
+    <div style={{ minHeight: '100vh', background: 'var(--color-bg)', padding: 24 }}>
+      {/* ヘッダー */}
+      <div style={{ textAlign: 'center', marginBottom: 24 }}>
+        <h1 style={{
+          fontFamily: 'var(--pixel-font)',
+          fontSize: 16,
+          color: '#ffffff',
+          letterSpacing: 3,
+          textShadow: '0 0 16px #7c3aed',
+          margin: 0,
+        }}>
+          🍅 POMO-SLIME
+        </h1>
+      </div>
 
+      {/* タブ切り替え */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 0, marginBottom: 28 }}>
+        {(['work', 'slime'] as Tab[]).map(t => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className="pixel-btn"
+            style={{
+              padding: '10px 28px',
+              background: tab === t ? (t === 'work' ? '#7c3aed' : '#059669') : '#1a1a2e',
+              color: tab === t ? '#ffffff' : '#6b7280',
+              borderColor: tab === t ? (t === 'work' ? '#7c3aed' : '#059669') : '#4a4a8a',
+              fontSize: 10,
+              position: 'relative',
+            }}
+          >
+            {t === 'work' ? '⏱ WORK' : '🟢 SLIME'}
+            {t === 'slime' && slimeAlert && (
+              <span style={{
+                position: 'absolute', top: -6, right: -6,
+                width: 12, height: 12,
+                background: '#ef4444',
+                borderRadius: '50%',
+                border: '2px solid var(--color-bg)',
+              }} />
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* 通知 */}
       {notification && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-purple-600 text-white px-6 py-3 rounded-full shadow-lg z-50 animate-bounce">
+        <div style={{
+          position: 'fixed', top: 20, left: '50%', transform: 'translateX(-50%)',
+          fontFamily: 'var(--pixel-font)', fontSize: 10,
+          background: '#7c3aed', color: '#ffffff',
+          padding: '10px 20px',
+          border: '3px solid #a78bfa',
+          boxShadow: '4px 4px 0 #000',
+          zIndex: 100,
+          letterSpacing: 1,
+        }}>
           {notification}
         </div>
       )}
 
-      <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="flex flex-col gap-6">
-          <Slime slime={slime} />
-          <FeedPanel coins={slime.coins} onFeed={handleFeed} />
-        </div>
-
-        <div>
-          <PomodoroTimer
-            onPomodoroComplete={handlePomodoroComplete}
-            pomodoroCount={slime.pomodoroCount}
-          />
-          <div className="mt-6 p-4 bg-gray-800 rounded-xl text-gray-400 text-sm">
-            <p className="font-bold text-white mb-2">📖 遊び方</p>
-            <ul className="space-y-1 list-disc list-inside">
-              <li>25分の作業タイマーをスタート</li>
-              <li>完了するとコインがもらえる</li>
-              <li>連続でこなすほどボーナスUP</li>
-              <li>コインでスライムにえさをあげよう</li>
-              <li>えさをあげないと弱ってしまう…</li>
-            </ul>
+      {/* コンテンツ */}
+      <div style={{ maxWidth: 520, margin: '0 auto' }}>
+        {tab === 'work' ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <PomodoroTimer
+              onPomodoroComplete={handlePomodoroComplete}
+              pomodoroCount={slime.pomodoroCount}
+              onBreakStart={handleBreakStart}
+            />
+            {/* 作業中はスライムの最低限の情報だけ小さく表示 */}
+            <div className="pixel-box" style={{ padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 8, color: '#6b7280' }}>
+                SLIME STATUS
+              </div>
+              <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                <span style={{ fontFamily: 'var(--pixel-font)', fontSize: 8, color: '#fbbf24' }}>🪙 {slime.coins}</span>
+                <span style={{ fontFamily: 'var(--pixel-font)', fontSize: 8, color: slimeAlert ? '#ef4444' : '#22c55e' }}>
+                  {slimeAlert ? '⚠ HUNGRY' : '♥ OK'}
+                </span>
+              </div>
+            </div>
+            <div className="pixel-box" style={{ padding: '14px 20px' }}>
+              <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 8, color: '#4b5563', lineHeight: 2.2 }}>
+                <div>▸ 25MIN WORK → COINS EARNED</div>
+                <div>▸ 3+ COMBO = BONUS COINS</div>
+                <div>▸ FEED SLIME DURING BREAK</div>
+                <div>▸ SLIME GETS HUNGRY OVER TIME</div>
+              </div>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <Slime slime={slime} />
+            <FeedPanel coins={slime.coins} onFeed={handleFeed} />
+          </div>
+        )}
       </div>
     </div>
   )

@@ -86,9 +86,11 @@ func DecayHunger() error {
 
 func calcStatus(hunger int) string {
 	switch {
-	case hunger >= 70:
+	case hunger >= 80:
 		return "happy"
-	case hunger >= 40:
+	case hunger >= 60:
+		return "slightly_happy"
+	case hunger >= 35:
 		return "normal"
 	case hunger >= 15:
 		return "hungry"

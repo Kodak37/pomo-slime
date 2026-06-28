@@ -5,16 +5,17 @@ type Phase = 'work' | 'break'
 interface Props {
   onPomodoroComplete: (count: number) => void
   pomodoroCount: number
+  onBreakStart?: () => void
 }
 
-export function PomodoroTimer({ onPomodoroComplete, pomodoroCount }: Props) {
+const WORK_SEC = 25 * 60
+const BREAK_SEC = 5 * 60
+
+export function PomodoroTimer({ onPomodoroComplete, pomodoroCount, onBreakStart }: Props) {
   const [phase, setPhase] = useState<Phase>('work')
-  const [seconds, setSeconds] = useState(25 * 60)
+  const [seconds, setSeconds] = useState(WORK_SEC)
   const [running, setRunning] = useState(false)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
-
-  const WORK_SEC = 25 * 60
-  const BREAK_SEC = 5 * 60
 
   useEffect(() => {
     if (running) {
@@ -36,7 +37,9 @@ export function PomodoroTimer({ onPomodoroComplete, pomodoroCount }: Props) {
 
   function handlePhaseEnd() {
     if (phase === 'work') {
-      onPomodoroComplete(pomodoroCount + 1)
+      const newCount = pomodoroCount + 1
+      onPomodoroComplete(newCount)
+      onBreakStart?.()
       setPhase('break')
       setSeconds(BREAK_SEC)
       setRunning(true)
@@ -57,54 +60,81 @@ export function PomodoroTimer({ onPomodoroComplete, pomodoroCount }: Props) {
 
   const minutes = Math.floor(seconds / 60)
   const secs = seconds % 60
-  const progress = phase === 'work'
-    ? ((WORK_SEC - seconds) / WORK_SEC) * 100
-    : ((BREAK_SEC - seconds) / BREAK_SEC) * 100
+
+  const totalSec = phase === 'work' ? WORK_SEC : BREAK_SEC
+  const elapsed = totalSec - seconds
+  const segments = 20
+  const filledSeg = Math.floor((elapsed / totalSec) * segments)
+  const barColor = phase === 'work' ? '#7c3aed' : '#06b6d4'
+  const phaseLabel = phase === 'work' ? '▸ WORK' : '▸ BREAK'
+  const phaseColor = phase === 'work' ? '#7c3aed' : '#06b6d4'
 
   return (
-    <div className="flex flex-col items-center gap-6 p-8 bg-gray-800 rounded-2xl shadow-xl">
-      <div className="text-sm font-bold tracking-widest uppercase text-purple-400">
-        {phase === 'work' ? '🍅 作業タイム' : '☕ 休憩タイム'}
+    <div className="pixel-box flex flex-col items-center gap-6 p-8">
+      {/* フェーズ表示 */}
+      <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 11, color: phaseColor, letterSpacing: 3 }}>
+        {phaseLabel}
       </div>
 
-      {/* 円形プログレス */}
-      <div className="relative w-48 h-48">
-        <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-          <circle cx="50" cy="50" r="45" fill="none" stroke="#374151" strokeWidth="8" />
-          <circle
-            cx="50" cy="50" r="45" fill="none"
-            stroke={phase === 'work' ? '#a855f7' : '#34d399'}
-            strokeWidth="8"
-            strokeDasharray={`${2 * Math.PI * 45}`}
-            strokeDashoffset={`${2 * Math.PI * 45 * (1 - progress / 100)}`}
-            strokeLinecap="round"
-            style={{ transition: 'stroke-dashoffset 1s linear' }}
+      {/* 時間表示（大きいピクセルフォント） */}
+      <div style={{
+        fontFamily: 'var(--pixel-font)',
+        fontSize: 48,
+        color: '#ffffff',
+        letterSpacing: 4,
+        textShadow: `0 0 20px ${phaseColor}`,
+        lineHeight: 1,
+      }}>
+        {String(minutes).padStart(2, '0')}:{String(secs).padStart(2, '0')}
+      </div>
+
+      {/* ピクセル進捗バー */}
+      <div style={{ display: 'flex', gap: 3 }}>
+        {Array.from({ length: segments }).map((_, i) => (
+          <div
+            key={i}
+            style={{
+              width: 10,
+              height: 18,
+              background: i < filledSeg ? barColor : '#2d2d4e',
+              border: '1px solid #1a1a35',
+              transition: 'background 0.3s',
+            }}
           />
-        </svg>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-4xl font-mono font-bold text-white">
-            {String(minutes).padStart(2, '0')}:{String(secs).padStart(2, '0')}
-          </span>
-        </div>
+        ))}
       </div>
 
-      <div className="flex gap-3">
+      {/* ボタン */}
+      <div style={{ display: 'flex', gap: 12 }}>
         <button
           onClick={toggle}
-          className="px-6 py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-lg transition-colors"
+          className="pixel-btn"
+          style={{
+            padding: '10px 24px',
+            background: running ? '#1e3a5f' : barColor,
+            color: '#ffffff',
+            borderColor: running ? '#4a8abf' : phaseColor,
+          }}
         >
-          {running ? '⏸ 一時停止' : '▶ スタート'}
+          {running ? '⏸ PAUSE' : '▶ START'}
         </button>
         <button
           onClick={reset}
-          className="px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg transition-colors"
+          className="pixel-btn"
+          style={{
+            padding: '10px 16px',
+            background: '#2d2d4e',
+            color: '#9ca3af',
+            borderColor: '#4a4a8a',
+          }}
         >
-          ↺ リセット
+          ↺ RST
         </button>
       </div>
 
-      <div className="text-gray-400 text-sm">
-        今日の完了: <span className="text-yellow-400 font-bold">{pomodoroCount}</span> 回
+      {/* カウンター */}
+      <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 9, color: '#6b7280' }}>
+        TODAY: <span style={{ color: '#fbbf24' }}>{pomodoroCount}</span> / COMBO BONUS AT 3+
       </div>
     </div>
   )
