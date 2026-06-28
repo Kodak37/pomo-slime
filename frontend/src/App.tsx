@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { PomodoroTimer } from './components/PomodoroTimer'
-import { Slime } from './components/Slime'
-import { FeedPanel } from './components/FeedPanel'
+import { SlimeRoom } from './components/SlimeRoom'
 import { PomodoroLog } from './components/PomodoroLog'
 import { MiniGame } from './components/MiniGame'
 import { Customization } from './components/Customization'
@@ -167,71 +166,72 @@ export default function App() {
         />
       )}
 
-      {/* コンテンツ */}
-      <div style={{ maxWidth:560, margin:'0 auto', padding:'0 16px 48px', position:'relative', zIndex:2 }}>
+      {/* スライムタブ: 全幅ルームビュー */}
+      {tab === 'slime' && (
+        <div style={{ position:'relative', zIndex:2 }}>
+          <SlimeRoom
+            slime={slime}
+            bodyColor={outfit?.bodyColor}
+            hatType={outfit?.hatType}
+            themeId={theme}
+            onNameUpdate={name => setSlime(s => s ? { ...s, name } : s)}
+            onFeed={handleFeed}
+            onGameOpen={() => setShowGame(true)}
+          />
+        </div>
+      )}
 
-        {/* 作業タブ */}
-        {tab === 'work' && (
-          <div style={{ display:'flex', flexDirection:'column', gap:18 }}>
-            <PomodoroTimer
-              onPomodoroComplete={handlePomodoroComplete}
-              pomodoroCount={slime.pomodoroCount}
-              onBreakStart={handleBreakStart}
-            />
-            <div className="pixel-box" style={{ padding:'14px 20px' }}>
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
-                <div style={{ fontFamily:'var(--pixel-font)', fontSize:11, color:'var(--text-dim)' }}>スライムのようす</div>
-                <div style={{ display:'flex', gap:18 }}>
-                  <span style={{ fontFamily:'var(--pixel-font)', fontSize:11, color:'var(--accent)' }}>🪙 {slime.coins}</span>
-                  <span style={{ fontFamily:'var(--pixel-font)', fontSize:11, color: slimeAlert ? 'var(--red)' : 'var(--green)' }}>
-                    {slimeAlert ? '⚠ おなかすいた' : '♥ 元気'}
-                  </span>
+      {/* その他タブ: 560px幅 */}
+      {tab !== 'slime' && (
+        <div style={{ maxWidth:560, margin:'0 auto', padding:'0 16px 48px', position:'relative', zIndex:2 }}>
+
+          {/* 作業タブ */}
+          {tab === 'work' && (
+            <div style={{ display:'flex', flexDirection:'column', gap:18 }}>
+              <PomodoroTimer
+                onPomodoroComplete={handlePomodoroComplete}
+                pomodoroCount={slime.pomodoroCount}
+                onBreakStart={handleBreakStart}
+              />
+              <div className="pixel-box" style={{ padding:'14px 20px' }}>
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
+                  <div style={{ fontFamily:'var(--pixel-font)', fontSize:11, color:'var(--text-dim)' }}>スライムのようす</div>
+                  <div style={{ display:'flex', gap:18 }}>
+                    <span style={{ fontFamily:'var(--pixel-font)', fontSize:11, color:'var(--accent)' }}>🪙 {slime.coins}</span>
+                    <span style={{ fontFamily:'var(--pixel-font)', fontSize:11, color: slimeAlert ? 'var(--red)' : 'var(--green)' }}>
+                      {slimeAlert ? '⚠ おなかすいた' : '♥ 元気'}
+                    </span>
+                  </div>
+                </div>
+                <div style={{ fontFamily:'var(--pixel-font)', fontSize:10, color: slimeAlert ? 'var(--red)' : 'var(--text-muted)', lineHeight:1.8 }}>
+                  {timer}
                 </div>
               </div>
-              <div style={{ fontFamily:'var(--pixel-font)', fontSize:10, color: slimeAlert ? 'var(--red)' : 'var(--text-muted)', lineHeight:1.8 }}>
-                {timer}
+              <div className="pixel-box" style={{ padding:'16px 20px' }}>
+                <div style={{ fontFamily:'var(--pixel-font)', fontSize:10, color:'var(--text-muted)', lineHeight:2.4 }}>
+                  <div>▸ 25分タイマーを回してコインをゲット</div>
+                  <div>▸ 25分が最高効率（前後するとコイン減）</div>
+                  <div>▸ 3回以上続けるとボーナスコイン</div>
+                  <div>▸ 休憩中にスライムにごはんをあげよう</div>
+                  <div>▸ 家具を置くとコインボーナスUP！</div>
+                </div>
               </div>
             </div>
-            <div className="pixel-box" style={{ padding:'16px 20px' }}>
-              <div style={{ fontFamily:'var(--pixel-font)', fontSize:10, color:'var(--text-muted)', lineHeight:2.4 }}>
-                <div>▸ 25分タイマーを回してコインをゲット</div>
-                <div>▸ 25分が最高効率（前後するとコイン減）</div>
-                <div>▸ 3回以上続けるとボーナスコイン</div>
-                <div>▸ 休憩中にスライムにごはんをあげよう</div>
-                <div>▸ 家具を置くとコインボーナスUP！</div>
-              </div>
+          )}
+
+          {/* ログタブ */}
+          {tab === 'log' && <PomodoroLog />}
+
+          {/* 設定タブ */}
+          {tab === 'settings' && (
+            <div style={{ display:'flex', flexDirection:'column', gap:18 }}>
+              <RoomSettings currentTheme={theme} onThemeChange={setTheme} />
+              <Customization coins={slime.coins} onUpdate={() => { fetchSlime(); fetchOutfit() }} />
+              <Shop coins={slime.coins} onUpdate={fetchSlime} />
             </div>
-          </div>
-        )}
-
-        {/* スライムタブ */}
-        {tab === 'slime' && (
-          <div style={{ display:'flex', flexDirection:'column', gap:18 }}>
-            <Slime
-              slime={slime}
-              bodyColor={outfit?.bodyColor}
-              hatType={outfit?.hatType}
-              onNameUpdate={name => setSlime(s => s ? { ...s, name } : s)}
-            />
-            <FeedPanel coins={slime.coins} onFeed={handleFeed} />
-            <button onClick={() => setShowGame(true)} className="pixel-btn" style={{ padding:'14px', fontSize:12, background:'#1a0a20', color:'#c084fc', borderColor:'#7c3aed', width:'100%' }}>
-              🎮 スライムと遊ぶ（食べ物キャッチ）
-            </button>
-          </div>
-        )}
-
-        {/* ログタブ */}
-        {tab === 'log' && <PomodoroLog />}
-
-        {/* 設定タブ */}
-        {tab === 'settings' && (
-          <div style={{ display:'flex', flexDirection:'column', gap:18 }}>
-            <RoomSettings currentTheme={theme} onThemeChange={setTheme} />
-            <Customization coins={slime.coins} onUpdate={() => { fetchSlime(); fetchOutfit() }} />
-            <Shop coins={slime.coins} onUpdate={fetchSlime} />
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
