@@ -1,0 +1,4 @@
+backend/slime.db
+backend/*.db
+frontend/node_modules/
+frontend/dist/
