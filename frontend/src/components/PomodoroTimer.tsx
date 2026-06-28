@@ -8,11 +8,11 @@ interface Props {
   onBreakStart?: () => void
 }
 
-const WORK_SEC = 25 * 60
-const BREAK_SEC = 5 * 60
+const WORK_SEC  = 25 * 60
+const BREAK_SEC =  5 * 60
 
 export function PomodoroTimer({ onPomodoroComplete, pomodoroCount, onBreakStart }: Props) {
-  const [phase, setPhase] = useState<Phase>('work')
+  const [phase,   setPhase]   = useState<Phase>('work')
   const [seconds, setSeconds] = useState(WORK_SEC)
   const [running, setRunning] = useState(false)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -21,11 +21,7 @@ export function PomodoroTimer({ onPomodoroComplete, pomodoroCount, onBreakStart 
     if (running) {
       intervalRef.current = setInterval(() => {
         setSeconds(prev => {
-          if (prev <= 1) {
-            clearInterval(intervalRef.current!)
-            handlePhaseEnd()
-            return 0
-          }
+          if (prev <= 1) { clearInterval(intervalRef.current!); handlePhaseEnd(); return 0 }
           return prev - 1
         })
       }, 1000)
@@ -37,8 +33,7 @@ export function PomodoroTimer({ onPomodoroComplete, pomodoroCount, onBreakStart 
 
   function handlePhaseEnd() {
     if (phase === 'work') {
-      const newCount = pomodoroCount + 1
-      onPomodoroComplete(newCount)
+      onPomodoroComplete(pomodoroCount + 1)
       onBreakStart?.()
       setPhase('break')
       setSeconds(BREAK_SEC)
@@ -51,90 +46,72 @@ export function PomodoroTimer({ onPomodoroComplete, pomodoroCount, onBreakStart 
   }
 
   function toggle() { setRunning(r => !r) }
-
-  function reset() {
-    setRunning(false)
-    setPhase('work')
-    setSeconds(WORK_SEC)
-  }
+  function reset()  { setRunning(false); setPhase('work'); setSeconds(WORK_SEC) }
 
   const minutes = Math.floor(seconds / 60)
-  const secs = seconds % 60
-
-  const totalSec = phase === 'work' ? WORK_SEC : BREAK_SEC
-  const elapsed = totalSec - seconds
+  const secs    = seconds % 60
+  const total   = phase === 'work' ? WORK_SEC : BREAK_SEC
+  const elapsed = total - seconds
   const segments = 20
-  const filledSeg = Math.floor((elapsed / totalSec) * segments)
-  const barColor = phase === 'work' ? '#7c3aed' : '#06b6d4'
-  const phaseLabel = phase === 'work' ? '▸ WORK' : '▸ BREAK'
-  const phaseColor = phase === 'work' ? '#7c3aed' : '#06b6d4'
+  const filled   = Math.floor((elapsed / total) * segments)
+  const color    = phase === 'work' ? 'var(--accent)' : 'var(--green)'
+  const phaseLabel = phase === 'work' ? '🍅 作業タイム' : '☕ 休憩タイム'
 
   return (
-    <div className="pixel-box flex flex-col items-center gap-6 p-8">
-      {/* フェーズ表示 */}
-      <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 11, color: phaseColor, letterSpacing: 3 }}>
+    <div className="pixel-box" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, padding: 28 }}>
+      <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 13, color, letterSpacing: 2 }}>
         {phaseLabel}
       </div>
 
-      {/* 時間表示（大きいピクセルフォント） */}
       <div style={{
         fontFamily: 'var(--pixel-font)',
-        fontSize: 48,
-        color: '#ffffff',
+        fontSize: 52,
+        color: '#fff',
         letterSpacing: 4,
-        textShadow: `0 0 20px ${phaseColor}`,
+        textShadow: `0 0 24px ${color}`,
         lineHeight: 1,
       }}>
         {String(minutes).padStart(2, '0')}:{String(secs).padStart(2, '0')}
       </div>
 
-      {/* ピクセル進捗バー */}
-      <div style={{ display: 'flex', gap: 3 }}>
+      <div style={{ display: 'flex' }}>
         {Array.from({ length: segments }).map((_, i) => (
-          <div
-            key={i}
-            style={{
-              width: 10,
-              height: 18,
-              background: i < filledSeg ? barColor : '#2d2d4e',
-              border: '1px solid #1a1a35',
-              transition: 'background 0.3s',
-            }}
-          />
+          <div key={i} className="pixel-seg" style={{ background: i < filled ? color : '#2a1208' }} />
         ))}
       </div>
 
-      {/* ボタン */}
       <div style={{ display: 'flex', gap: 12 }}>
         <button
           onClick={toggle}
           className="pixel-btn"
           style={{
-            padding: '10px 24px',
-            background: running ? '#1e3a5f' : barColor,
-            color: '#ffffff',
-            borderColor: running ? '#4a8abf' : phaseColor,
+            padding: '12px 28px',
+            fontSize: 12,
+            background: running ? '#1a0f06' : color,
+            color: running ? 'var(--text-dim)' : '#000',
+            borderColor: color,
           }}
         >
-          {running ? '⏸ PAUSE' : '▶ START'}
+          {running ? '⏸ 一時停止' : '▶ スタート'}
         </button>
         <button
           onClick={reset}
           className="pixel-btn"
           style={{
-            padding: '10px 16px',
-            background: '#2d2d4e',
-            color: '#9ca3af',
-            borderColor: '#4a4a8a',
+            padding: '12px 16px',
+            fontSize: 11,
+            background: '#1a0f06',
+            color: 'var(--text-dim)',
+            borderColor: 'var(--border)',
           }}
         >
-          ↺ RST
+          ↺ リセット
         </button>
       </div>
 
-      {/* カウンター */}
-      <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 9, color: '#6b7280' }}>
-        TODAY: <span style={{ color: '#fbbf24' }}>{pomodoroCount}</span> / COMBO BONUS AT 3+
+      <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 10, color: 'var(--text-muted)', textAlign: 'center', lineHeight: 2 }}>
+        本日: <span style={{ color: 'var(--accent)' }}>{pomodoroCount}</span> 回完了
+        {pomodoroCount >= 3 && <span style={{ color: 'var(--green)' }}>&nbsp;✦ボーナス中</span>}
       </div>
     </div>
   )
