@@ -3,19 +3,30 @@ import { useState, useEffect, useRef } from 'react'
 type Phase = 'work' | 'break'
 
 interface Props {
-  onPomodoroComplete: (count: number) => void
+  onPomodoroComplete: (count: number, durationMin: number) => void
   pomodoroCount: number
   onBreakStart?: () => void
 }
 
-const WORK_SEC  = 25 * 60
-const BREAK_SEC =  5 * 60
+const BREAK_SEC = 5 * 60
+
+function coinMultiplier(min: number): number {
+  const dev = Math.abs(min - 25)
+  return Math.max(0.2, 1 - dev * 0.04)
+}
 
 export function PomodoroTimer({ onPomodoroComplete, pomodoroCount, onBreakStart }: Props) {
+  const [durationMin, setDurationMin] = useState(25)
   const [phase,   setPhase]   = useState<Phase>('work')
-  const [seconds, setSeconds] = useState(WORK_SEC)
+  const [seconds, setSeconds] = useState(25 * 60)
   const [running, setRunning] = useState(false)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const workSec = durationMin * 60
+
+  useEffect(() => {
+    if (!running) setSeconds(phase === 'work' ? workSec : BREAK_SEC)
+  }, [durationMin])
 
   useEffect(() => {
     if (running) {
@@ -33,78 +44,73 @@ export function PomodoroTimer({ onPomodoroComplete, pomodoroCount, onBreakStart 
 
   function handlePhaseEnd() {
     if (phase === 'work') {
-      onPomodoroComplete(pomodoroCount + 1)
+      onPomodoroComplete(pomodoroCount + 1, durationMin)
       onBreakStart?.()
       setPhase('break')
       setSeconds(BREAK_SEC)
       setRunning(true)
     } else {
       setPhase('work')
-      setSeconds(WORK_SEC)
+      setSeconds(workSec)
       setRunning(false)
     }
   }
 
   function toggle() { setRunning(r => !r) }
-  function reset()  { setRunning(false); setPhase('work'); setSeconds(WORK_SEC) }
+  function reset()  { setRunning(false); setPhase('work'); setSeconds(workSec) }
 
   const minutes = Math.floor(seconds / 60)
   const secs    = seconds % 60
-  const total   = phase === 'work' ? WORK_SEC : BREAK_SEC
+  const total   = phase === 'work' ? workSec : BREAK_SEC
   const elapsed = total - seconds
   const segments = 20
   const filled   = Math.floor((elapsed / total) * segments)
   const color    = phase === 'work' ? 'var(--accent)' : 'var(--green)'
-  const phaseLabel = phase === 'work' ? '🍅 作業タイム' : '☕ 休憩タイム'
+  const mult     = coinMultiplier(durationMin)
+  const isOptimal = durationMin === 25
 
   return (
-    <div className="pixel-box" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, padding: 28 }}>
+    <div className="pixel-box" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18, padding: 28 }}>
+      {/* フェーズ */}
       <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 13, color, letterSpacing: 2 }}>
-        {phaseLabel}
+        {phase === 'work' ? '🍅 作業タイム' : '☕ 休憩タイム'}
       </div>
 
-      <div style={{
-        fontFamily: 'var(--pixel-font)',
-        fontSize: 52,
-        color: '#fff',
-        letterSpacing: 4,
-        textShadow: `0 0 24px ${color}`,
-        lineHeight: 1,
-      }}>
+      {/* 時間設定（停止中のみ） */}
+      {!running && phase === 'work' && (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+          <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 10, color: 'var(--text-muted)' }}>作業時間を設定</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <button onClick={() => setDurationMin(m => Math.max(5, m - 5))} className="pixel-btn" style={{ padding: '6px 12px', fontSize: 13, background: '#1a0f06', color: 'var(--text-dim)', borderColor: 'var(--border)' }}>－</button>
+            <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 20, color: 'var(--text)', minWidth: 60, textAlign: 'center' }}>
+              {durationMin}<span style={{ fontSize: 10 }}>分</span>
+            </div>
+            <button onClick={() => setDurationMin(m => Math.min(60, m + 5))} className="pixel-btn" style={{ padding: '6px 12px', fontSize: 13, background: '#1a0f06', color: 'var(--text-dim)', borderColor: 'var(--border)' }}>＋</button>
+          </div>
+          <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 9, color: isOptimal ? 'var(--green)' : 'var(--accent)' }}>
+            {isOptimal ? '✦ 最高効率（25分）' : `コイン効率: ${Math.round(mult * 100)}%`}
+          </div>
+        </div>
+      )}
+
+      {/* カウントダウン */}
+      <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 52, color: '#fff', letterSpacing: 4, textShadow: `0 0 24px ${color}`, lineHeight: 1 }}>
         {String(minutes).padStart(2, '0')}:{String(secs).padStart(2, '0')}
       </div>
 
+      {/* プログレスバー */}
       <div style={{ display: 'flex' }}>
         {Array.from({ length: segments }).map((_, i) => (
           <div key={i} className="pixel-seg" style={{ background: i < filled ? color : '#2a1208' }} />
         ))}
       </div>
 
+      {/* ボタン */}
       <div style={{ display: 'flex', gap: 12 }}>
-        <button
-          onClick={toggle}
-          className="pixel-btn"
-          style={{
-            padding: '12px 28px',
-            fontSize: 12,
-            background: running ? '#1a0f06' : color,
-            color: running ? 'var(--text-dim)' : '#000',
-            borderColor: color,
-          }}
-        >
+        <button onClick={toggle} className="pixel-btn" style={{ padding: '12px 28px', fontSize: 12, background: running ? '#1a0f06' : color, color: running ? 'var(--text-dim)' : '#000', borderColor: color }}>
           {running ? '⏸ 一時停止' : '▶ スタート'}
         </button>
-        <button
-          onClick={reset}
-          className="pixel-btn"
-          style={{
-            padding: '12px 16px',
-            fontSize: 11,
-            background: '#1a0f06',
-            color: 'var(--text-dim)',
-            borderColor: 'var(--border)',
-          }}
-        >
+        <button onClick={reset} className="pixel-btn" style={{ padding: '12px 16px', fontSize: 11, background: '#1a0f06', color: 'var(--text-dim)', borderColor: 'var(--border)' }}>
           ↺ リセット
         </button>
       </div>

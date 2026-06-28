@@ -1,0 +1,39 @@
+package handler
+
+import (
+	"encoding/json"
+	"net/http"
+	"pomodoro-slime/model"
+	"strconv"
+
+	"github.com/go-chi/chi/v5"
+)
+
+func GetFurniture(w http.ResponseWriter, r *http.Request) {
+	list, err := model.GetFurniture()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	json.NewEncoder(w).Encode(list)
+}
+
+func BuyFurniture(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
+	list, err := model.BuyFurniture(id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	json.NewEncoder(w).Encode(list)
+}
+
+func ToggleFurniture(w http.ResponseWriter, r *http.Request) {
+	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
+	list, err := model.ToggleFurniture(id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	json.NewEncoder(w).Encode(list)
+}
