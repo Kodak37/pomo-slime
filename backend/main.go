@@ -35,9 +35,6 @@ func main() {
 		AllowedHeaders: []string{"Content-Type"},
 	}))
 
-	// debug
-	r.Post("/api/debug/coins", handler.DebugAddCoins)
-
 	// slime
 	r.Get("/api/slime", handler.GetSlime)
 	r.Put("/api/slime/name", handler.UpdateName)

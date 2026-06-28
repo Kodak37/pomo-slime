@@ -118,7 +118,6 @@ POST /api/furniture/{id}/buy     家具購入
 POST /api/furniture/{id}/toggle  家具設置/撤去
 GET  /api/room               部屋テーマ取得
 PUT  /api/room               部屋テーマ変更
-POST /api/debug/coins        【開発用】コイン追加（本番前に要削除）
 ```
 
 ## デザイン方針（v2）
@@ -153,7 +152,6 @@ POST /api/debug/coins        【開発用】コイン追加（本番前に要削
 
 - [ ] `dev` → `main` マージ＆プッシュ（Renderデプロイに必要）
 - [ ] ログイン機能（未実装。現状は全員が同じスライムを共有）
-- [ ] `backend/handler/debug.go` の本番前削除 or 認証付きに変更
 - [ ] Renderの無料プランDB揮発問題の対処
 
 ## 将来の拡張（MVPには含めない）
