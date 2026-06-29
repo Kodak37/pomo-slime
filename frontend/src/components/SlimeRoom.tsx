@@ -557,7 +557,7 @@ export function SlimeRoom({
             </div>
           )}
 
-          <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}>おなか</div>
+          <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>おなか</div>
           <div style={{ display: 'flex', gap: 2, marginBottom: 5 }}>
             {Array.from({ length: segs }).map((_, i) => (
               <div key={i} style={{
@@ -567,10 +567,10 @@ export function SlimeRoom({
               }} />
             ))}
           </div>
-          <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 10, color: 'var(--text-muted)' }}>{slime.hunger}/100</div>
+          <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 12, color: 'var(--text-muted)' }}>{slime.hunger}/100</div>
 
           {timeMsg && (
-            <div style={{ marginTop: 8, fontFamily: 'var(--pixel-font)', fontSize: 9, color: isCritical ? 'var(--red)' : 'var(--text-muted)', maxWidth: 220 }}>
+            <div style={{ marginTop: 8, fontFamily: 'var(--pixel-font)', fontSize: 11, color: isCritical ? 'var(--red)' : 'var(--text-muted)', maxWidth: 240 }}>
               ⏱ {timeMsg}
             </div>
           )}
