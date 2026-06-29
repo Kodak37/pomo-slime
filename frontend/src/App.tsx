@@ -196,20 +196,20 @@ export default function App() {
           />
           <div className="pixel-box" style={{ padding:'14px 20px' }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
-              <div style={{ fontFamily:'var(--pixel-font)', fontSize:11, color:'var(--text-dim)' }}>スライムのようす</div>
+              <div style={{ fontFamily:'var(--pixel-font)', fontSize:13, color:'var(--text-dim)' }}>スライムのようす</div>
               <div style={{ display:'flex', gap:18 }}>
-                <span style={{ fontFamily:'var(--pixel-font)', fontSize:11, color:'var(--accent)' }}>🪙 {slime.coins}</span>
-                <span style={{ fontFamily:'var(--pixel-font)', fontSize:11, color: slimeAlert ? 'var(--red)' : 'var(--green)' }}>
+                <span style={{ fontFamily:'var(--pixel-font)', fontSize:13, color:'var(--accent)' }}>🪙 {slime.coins}</span>
+                <span style={{ fontFamily:'var(--pixel-font)', fontSize:13, color: slimeAlert ? 'var(--red)' : 'var(--green)' }}>
                   {slimeAlert ? '⚠ おなかすいた' : '♥ 元気'}
                 </span>
               </div>
             </div>
-            <div style={{ fontFamily:'var(--pixel-font)', fontSize:10, color: slimeAlert ? 'var(--red)' : 'var(--text-muted)', lineHeight:1.8 }}>
+            <div style={{ fontFamily:'var(--pixel-font)', fontSize:12, color: slimeAlert ? 'var(--red)' : 'var(--text-muted)', lineHeight:1.8 }}>
               {timer}
             </div>
           </div>
           <div className="pixel-box" style={{ padding:'16px 20px' }}>
-            <div style={{ fontFamily:'var(--pixel-font)', fontSize:10, color:'var(--text-muted)', lineHeight:2.4 }}>
+            <div style={{ fontFamily:'var(--pixel-font)', fontSize:12, color:'var(--text-muted)', lineHeight:2.4 }}>
               <div>▸ 25分タイマーを回してコインをゲット</div>
               <div>▸ 25分が最高効率（前後するとコイン減）</div>
               <div>▸ 3回以上続けるとボーナスコイン</div>

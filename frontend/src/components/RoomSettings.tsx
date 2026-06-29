@@ -24,7 +24,7 @@ export function RoomSettings({ currentTheme, onThemeChange }: Props) {
 
   return (
     <div className="pixel-box" style={{ padding: '18px 20px' }}>
-      <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 11, color: 'var(--text-dim)', marginBottom: 16 }}>
+      <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 13, color: 'var(--text-dim)', marginBottom: 16 }}>
         🎨 部屋のテーマ
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -35,7 +35,7 @@ export function RoomSettings({ currentTheme, onThemeChange }: Props) {
             className="pixel-btn"
             style={{
               display: 'flex', alignItems: 'center', gap: 14,
-              padding: '10px 14px',
+              padding: '12px 16px',
               background: currentTheme === t.id ? 'rgba(245,158,11,0.12)' : 'rgba(0,0,0,0.2)',
               borderColor: currentTheme === t.id ? 'var(--accent)' : 'var(--border)',
               textAlign: 'left',
@@ -43,7 +43,7 @@ export function RoomSettings({ currentTheme, onThemeChange }: Props) {
           >
             {/* プレビュー */}
             <div style={{
-              width: 40, height: 28, flexShrink: 0,
+              width: 44, height: 30, flexShrink: 0,
               background: t.wall,
               border: '2px solid rgba(255,255,255,0.1)',
               position: 'relative', overflow: 'hidden',
@@ -58,7 +58,7 @@ export function RoomSettings({ currentTheme, onThemeChange }: Props) {
                 backgroundSize: '6px 6px',
               }} />
             </div>
-            <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 10, color: currentTheme === t.id ? 'var(--accent)' : 'var(--text)' }}>
+            <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 12, color: currentTheme === t.id ? 'var(--accent)' : 'var(--text)' }}>
               {t.label} {currentTheme === t.id && '✓'}
             </div>
           </button>

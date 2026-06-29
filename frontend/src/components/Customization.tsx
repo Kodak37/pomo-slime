@@ -36,12 +36,12 @@ export function Customization({ coins, onUpdate }: Props) {
 
   return (
     <div className="pixel-box" style={{ padding: '18px 20px' }}>
-      <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 11, color: 'var(--text-dim)', marginBottom: 16 }}>
+      <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 13, color: 'var(--text-dim)', marginBottom: 16 }}>
         👗 着せ替え
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {outfits.map(o => {
-          const canBuy   = !o.owned && coins >= o.cost
+          const canBuy     = !o.owned && coins >= o.cost
           const cantAfford = !o.owned && coins < o.cost
           return (
             <div key={o.id} style={{
@@ -49,21 +49,22 @@ export function Customization({ coins, onUpdate }: Props) {
               padding: '10px 14px',
               background: o.equipped ? 'rgba(245,158,11,0.1)' : 'rgba(0,0,0,0.2)',
               border: `2px solid ${o.equipped ? 'var(--accent)' : 'var(--border)'}`,
+              opacity: cantAfford ? 0.35 : 1,
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 {/* カラープレビュー */}
                 <div style={{
-                  width: 24, height: 24,
+                  width: 28, height: 28,
                   background: o.bodyColor || '#4ade80',
                   borderRadius: '50% 50% 45% 55% / 55% 55% 45% 45%',
                   border: '2px solid rgba(255,255,255,0.2)',
                   flexShrink: 0,
                 }} />
                 <div>
-                  <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 10, color: o.equipped ? 'var(--accent)' : 'var(--text)' }}>
+                  <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 12, color: o.equipped ? 'var(--accent)' : 'var(--text)' }}>
                     {o.name} {o.equipped && '✓'}
                   </div>
-                  <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 9, color: 'var(--text-muted)', marginTop: 4 }}>
+                  <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
                     {o.description}
                   </div>
                 </div>
@@ -71,14 +72,14 @@ export function Customization({ coins, onUpdate }: Props) {
               <div style={{ flexShrink: 0 }}>
                 {o.owned ? (
                   o.equipped ? (
-                    <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 9, color: 'var(--accent)' }}>装備中</div>
+                    <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 11, color: 'var(--accent)' }}>装備中</div>
                   ) : (
-                    <button onClick={() => equip(o.id)} className="pixel-btn" style={{ padding: '6px 12px', fontSize: 9, background: '#1a0f06', color: 'var(--text-dim)', borderColor: 'var(--border-lit)' }}>
+                    <button onClick={() => equip(o.id)} className="pixel-btn" style={{ padding: '7px 14px', fontSize: 11, background: '#1a0f06', color: 'var(--text-dim)', borderColor: 'var(--border-lit)' }}>
                       装備
                     </button>
                   )
                 ) : (
-                  <button onClick={() => buy(o.id)} disabled={cantAfford} className="pixel-btn" style={{ padding: '6px 12px', fontSize: 9, background: canBuy ? 'var(--accent)' : '#1a0f06', color: canBuy ? '#000' : 'var(--text-muted)', borderColor: canBuy ? 'var(--accent)' : 'var(--border)' }}>
+                  <button onClick={() => buy(o.id)} disabled={cantAfford} className="pixel-btn" style={{ padding: '7px 14px', fontSize: 11, background: canBuy ? 'var(--accent)' : '#1a0f06', color: canBuy ? '#000' : 'var(--text-muted)', borderColor: canBuy ? 'var(--accent)' : 'var(--border)' }}>
                     🪙{o.cost}
                   </button>
                 )}
