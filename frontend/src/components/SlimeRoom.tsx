@@ -121,32 +121,8 @@ function RoomDecorations({ themeId }: { themeId: string }) {
   }
   return (
     <>
-      {/* 窓 */}
-      <div style={{
-        position: 'absolute', top: '12%', right: '8%',
-        width: 72, height: 60,
-        border: '3px solid rgba(255,255,255,0.18)',
-        background: 'rgba(0,0,0,0.25)',
-        display: 'grid', gridTemplate: '1fr 1fr / 1fr 1fr',
-        gap: 3, padding: 3,
-        imageRendering: 'pixelated',
-      }}>
-        {[0,1,2,3].map(i => <div key={i} style={{ ...windowPaneStyle, border: '1px solid rgba(255,255,255,0.1)' }} />)}
-        <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: 3, background: 'rgba(255,255,255,0.18)', transform: 'translateX(-50%)' }} />
-        <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 3, background: 'rgba(255,255,255,0.18)', transform: 'translateY(-50%)' }} />
-      </div>
 
-      {/* 棚 */}
-      <div style={{
-        position: 'absolute', top: '22%', left: '6%',
-        width: 80, height: 8,
-        background: 'rgba(255,255,255,0.12)',
-        border: '2px solid rgba(255,255,255,0.1)',
-        borderBottom: '3px solid rgba(0,0,0,0.3)',
-      }}>
-        <div style={{ position: 'absolute', bottom: 8, left: 4, fontSize: 14, lineHeight: 1 }}>📚</div>
-        <div style={{ position: 'absolute', bottom: 8, left: 36, fontSize: 12, lineHeight: 1 }}>🕯️</div>
-      </div>
+
 
       {/* 壁と床の境界（巾木）*/}
       <div style={{
@@ -674,7 +650,7 @@ export function SlimeRoom({
               return (
                 <button
                   key={food.name}
-                  onClick={() => { onFeed(food.cost); setActivePanel(null) }}
+                  onClick={() => { onFeed(food.cost) }}
                   disabled={!ok}
                   className="pixel-btn"
                   style={{
@@ -683,6 +659,7 @@ export function SlimeRoom({
                     background: ok ? 'rgba(30,14,4,0.9)' : 'rgba(18,8,3,0.9)',
                     color: ok ? 'var(--text)' : 'var(--text-muted)',
                     borderColor: ok ? 'var(--border-lit)' : 'var(--border)',
+                    opacity: ok ? 1 : 0.35,
                     minWidth: 90,
                   }}
                 >
@@ -713,6 +690,19 @@ export function SlimeRoom({
         <PanelModal title="🏠 へやのテーマ" onClose={() => setActivePanel(null)}>
           <RoomSettings currentTheme={themeId} onThemeChange={t => { onThemeChange(t); }} />
         </PanelModal>
+      )}
+
+      {/* ────── 家具選択中ヒント ────── */}
+      {selectedFurnitureId !== null && (
+        <div style={{
+          position: 'absolute', bottom: 58, left: '50%', transform: 'translateX(-50%)',
+          background: 'rgba(0,0,0,0.75)', border: '1px solid rgba(255,255,255,0.12)',
+          padding: '4px 14px', zIndex: 15, whiteSpace: 'nowrap',
+          fontFamily: 'var(--pixel-font)', fontSize: 8, color: 'var(--text-muted)',
+          pointerEvents: 'none',
+        }}>
+          📦 空きスペースをクリックで選択解除
+        </div>
       )}
 
       {/* ────── HUD: 下部 ────── */}

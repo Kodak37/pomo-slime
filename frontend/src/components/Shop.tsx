@@ -60,6 +60,7 @@ export function Shop({ coins, onUpdate }: Props) {
                 padding: '10px 14px',
                 background: item.equipped ? 'rgba(74,222,128,0.08)' : 'rgba(0,0,0,0.2)',
                 border: `2px solid ${item.equipped ? 'var(--green)' : 'var(--border)'}`,
+                opacity: cantAfford ? 0.35 : 1,
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <span style={{ fontSize: 22 }}>{item.emoji}</span>
