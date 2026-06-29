@@ -22,6 +22,14 @@ interface SlimeData {
 
 interface Outfit { id: number; bodyColor: string; hatType: string; equipped: boolean }
 
+const THEME_COLORS: Record<string, { accent: string; accent2: string; borderLit: string }> = {
+  warm:   { accent: '#f59e0b', accent2: '#fb923c', borderLit: '#c8722a' },
+  forest: { accent: '#4ade80', accent2: '#86efac', borderLit: '#16a34a' },
+  ocean:  { accent: '#60a5fa', accent2: '#93c5fd', borderLit: '#2563eb' },
+  sakura: { accent: '#f472b6', accent2: '#f9a8d4', borderLit: '#db2777' },
+  night:  { accent: '#a78bfa', accent2: '#c4b5fd', borderLit: '#7c3aed' },
+}
+
 const DECAY_PER_MIN = 2 / 5
 function workTabTimer(hunger: number, updatedAt: string): string {
   const eff = Math.max(0, hunger - (Date.now() - new Date(updatedAt).getTime()) / 60000 * DECAY_PER_MIN)
@@ -45,6 +53,15 @@ export default function App() {
   const [showGame,     setShowGame]     = useState(false)
   const [theme,        setTheme]        = useState('warm')
   const [outfit,       setOutfit]       = useState<Outfit | null>(null)
+
+  // テーマ変更時にCSS変数をグローバルに更新 → 全コンポーネントに反映
+  useEffect(() => {
+    const c = THEME_COLORS[theme] ?? THEME_COLORS.warm
+    const root = document.documentElement.style
+    root.setProperty('--accent',     c.accent)
+    root.setProperty('--accent2',    c.accent2)
+    root.setProperty('--border-lit', c.borderLit)
+  }, [theme])
 
   // Supabase初期化 + 認証状態の監視
   useEffect(() => {

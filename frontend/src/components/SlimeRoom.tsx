@@ -509,26 +509,17 @@ export function SlimeRoom({
     setActivePanel(v => v === panel ? null : panel)
   }
 
-  const THEME_ACCENT: Record<string, string> = {
-    warm:   '#f59e0b',
-    forest: '#4ade80',
-    ocean:  '#60a5fa',
-    sakura: '#f472b6',
-    night:  '#a78bfa',
-  }
-  const accent = THEME_ACCENT[themeId ?? 'warm'] ?? '#f59e0b'
-
   const btnBase: React.CSSProperties = {
     padding: '10px 16px', fontSize: 12,
     background: 'rgba(0,0,0,0.45)',
-    borderColor: `${accent}55`,
-    color: `${accent}cc`,
+    borderColor: 'var(--border-lit)',
+    color: 'var(--text-dim)',
   }
   const btnActive: React.CSSProperties = {
-    ...btnBase,
-    background: `${accent}22`,
-    borderColor: accent,
-    color: accent,
+    padding: '10px 16px', fontSize: 12,
+    background: 'rgba(0,0,0,0.45)',
+    borderColor: 'var(--accent)',
+    color: 'var(--accent)',
   }
 
   return (
