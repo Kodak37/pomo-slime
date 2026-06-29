@@ -285,6 +285,12 @@ function PlacedItem({
 
 // ────────────── パネルモーダル ──────────────
 function PanelModal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [onClose])
+
   return (
     <div
       style={{
@@ -307,7 +313,7 @@ function PanelModal({ title, onClose, children }: { title: string; onClose: () =
           style={{ padding: '4px 12px', fontSize: 10 }}
         >✕ とじる</button>
       </div>
-      <div style={{ flex: 1, overflowY: 'auto', padding: '12px 12px 80px' }}>
+      <div style={{ flex: 1, overflowY: 'scroll', padding: '12px 12px 80px', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}>
         {children}
       </div>
     </div>
