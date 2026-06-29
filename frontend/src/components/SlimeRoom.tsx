@@ -285,32 +285,75 @@ function PlacedItem({
 
 // ────────────── パネルモーダル ──────────────
 function PanelModal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+  const [height, setHeight] = useState(320)
+  const dragging = useRef(false)
+  const startY   = useRef(0)
+  const startH   = useRef(0)
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [onClose])
+
+  function onDragDown(e: React.PointerEvent) {
+    dragging.current = true
+    startY.current   = e.clientY
+    startH.current   = height
+    ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+  }
+  function onDragMove(e: React.PointerEvent) {
+    if (!dragging.current) return
+    const newH = Math.max(120, Math.min(560, startH.current + (startY.current - e.clientY)))
+    setHeight(newH)
+  }
+  function onDragUp() { dragging.current = false }
+
   return (
-    <div
-      style={{
-        position: 'absolute', inset: 0, zIndex: 20,
-        background: 'rgba(0,0,0,0.72)',
-        backdropFilter: 'blur(3px)',
-        display: 'flex', flexDirection: 'column',
-      }}
-      onClick={e => { if (e.target === e.currentTarget) onClose() }}
-    >
+    <>
+      {/* 背景オーバーレイ */}
+      <div
+        style={{ position: 'absolute', inset: 0, zIndex: 20, background: 'rgba(0,0,0,0.55)' }}
+        onClick={onClose}
+      />
+      {/* パネル本体 */}
       <div style={{
-        margin: '16px 12px 0',
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        flexShrink: 0,
+        position: 'absolute', bottom: 0, left: 0, right: 0,
+        height, zIndex: 21,
+        background: 'rgba(10,5,1,0.96)',
+        borderTop: '2px solid rgba(255,255,255,0.12)',
+        backdropFilter: 'blur(4px)',
+        display: 'flex', flexDirection: 'column',
       }}>
-        <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 11, color: 'var(--text-dim)' }}>{title}</div>
-        <button
-          onClick={onClose}
-          className="pixel-btn"
-          style={{ padding: '4px 12px', fontSize: 10 }}
-        >✕ とじる</button>
+        {/* ドラッグハンドル */}
+        <div
+          onPointerDown={onDragDown}
+          onPointerMove={onDragMove}
+          onPointerUp={onDragUp}
+          onPointerCancel={onDragUp}
+          style={{
+            width: '100%', height: 22, flexShrink: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'ns-resize', touchAction: 'none',
+          }}
+        >
+          <div style={{ width: 44, height: 4, background: 'rgba(255,255,255,0.2)', borderRadius: 2 }} />
+        </div>
+        {/* ヘッダー */}
+        <div style={{
+          padding: '0 16px 10px',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          flexShrink: 0,
+        }}>
+          <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 11, color: 'var(--text-dim)' }}>{title}</div>
+          <button onClick={onClose} className="pixel-btn" style={{ padding: '4px 12px', fontSize: 10 }}>✕ とじる</button>
+        </div>
+        {/* コンテンツ */}
+        <div style={{ flex: 1, overflowY: 'scroll', padding: '0 12px 24px', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}>
+          {children}
+        </div>
       </div>
-      <div style={{ flex: 1, overflowY: 'auto', padding: '12px 12px 80px' }}>
-        {children}
-      </div>
-    </div>
+    </>
   )
 }
 
