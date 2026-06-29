@@ -211,6 +211,8 @@ export function SlimeRoom({
   const [editing, setEditing]       = useState(false)
   const [nameInput, setNameInput]   = useState(slime.name)
   const [activePanel, setActivePanel] = useState<ActivePanel>(null)
+  const [isDragging, setIsDragging] = useState(false)
+  const isDraggingRef               = useRef(false)
 
   const floorY = WALL_RATIO * 100 + 5
   const [pos, setPos]         = useState({ x: 45, y: floorY })
@@ -241,6 +243,7 @@ export function SlimeRoom({
 
     const TICK = 50
     const interval = setInterval(() => {
+      if (isDraggingRef.current) return
       const cur  = posRef.current
       const dx   = target.x - cur.x
       const dist = Math.abs(dx)
@@ -277,6 +280,33 @@ export function SlimeRoom({
     : slime.status === 'happy' ? '/slime/move.gif'
     : slime.status === 'slightly_happy' && !isIdle ? '/slime/jump.gif'
     : '/slime/idle.gif'
+
+  function handleSlimePointerDown(e: React.PointerEvent) {
+    e.preventDefault()
+    isDraggingRef.current = true
+    setIsDragging(true)
+    setIsIdle(false)
+    if (idleTimer.current) { clearTimeout(idleTimer.current); idleTimer.current = null }
+    idleScheduled.current = false
+    ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+  }
+
+  function handleSlimePointerMove(e: React.PointerEvent) {
+    if (!isDraggingRef.current || !roomRef.current) return
+    const rect = roomRef.current.getBoundingClientRect()
+    const x = Math.max(5, Math.min(95, ((e.clientX - rect.left) / rect.width) * 100))
+    const y = Math.max(5, Math.min(92, ((e.clientY - rect.top) / rect.height) * 100))
+    posRef.current = { x, y }
+    setPos({ x, y })
+  }
+
+  function handleSlimePointerUp() {
+    isDraggingRef.current = false
+    setIsDragging(false)
+    posRef.current = { ...posRef.current, y: floorY }
+    setPos(p => ({ ...p, y: floorY }))
+    pickTarget()
+  }
 
   async function saveName() {
     if (!nameInput.trim()) return
@@ -387,15 +417,26 @@ export function SlimeRoom({
         </div>
       </div>
 
-      {/* ────── スライム（徘徊） ────── */}
-      <div style={{
-        position: 'absolute',
-        left:   `${pos.x}%`,
-        top:    `${pos.y}%`,
-        transform: 'translate(-50%, -100%)',
-        zIndex: 5,
-        transition: 'left 0.06s linear, top 0.06s linear',
-      }}>
+      {/* ────── スライム（徘徊・ドラッグ） ────── */}
+      <div
+        onPointerDown={handleSlimePointerDown}
+        onPointerMove={handleSlimePointerMove}
+        onPointerUp={handleSlimePointerUp}
+        onPointerCancel={handleSlimePointerUp}
+        style={{
+          position: 'absolute',
+          left:   `${pos.x}%`,
+          top:    `${pos.y}%`,
+          transform: `translate(-50%, -100%) scale(${isDragging ? 1.15 : 1})`,
+          zIndex: isDragging ? 15 : 5,
+          transition: isDragging
+            ? 'transform 0.1s'
+            : 'left 0.06s linear, top 0.06s linear, transform 0.2s',
+          cursor: isDragging ? 'grabbing' : 'grab',
+          filter: isDragging ? 'drop-shadow(0 8px 16px rgba(0,0,0,0.6))' : undefined,
+          touchAction: 'none',
+        }}
+      >
         <div style={{
           fontFamily: 'var(--pixel-font)', fontSize: 8, color: cfg.color,
           textAlign: 'center', marginBottom: 2,
