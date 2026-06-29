@@ -2,10 +2,12 @@ package handler
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"strings"
 
+	"github.com/MicahParks/keyfunc/v3"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -13,20 +15,27 @@ type contextKey string
 
 const userIDKey contextKey = "userID"
 
+var jwks keyfunc.Keyfunc
+
+func InitAuth() error {
+	url := os.Getenv("SUPABASE_URL") + "/auth/v1/.well-known/jwks.json"
+	k, err := keyfunc.NewDefault([]string{url})
+	if err != nil {
+		return fmt.Errorf("JWKS初期化失敗: %w", err)
+	}
+	jwks = k
+	return nil
+}
+
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		token := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
-		if token == "" {
+		tokenStr := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
+		if tokenStr == "" {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}
 		claims := jwt.MapClaims{}
-		_, err := jwt.ParseWithClaims(token, claims, func(t *jwt.Token) (interface{}, error) {
-			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, jwt.ErrSignatureInvalid
-			}
-			return []byte(os.Getenv("SUPABASE_JWT_SECRET")), nil
-		})
+		_, err := jwt.ParseWithClaims(tokenStr, claims, jwks.Keyfunc)
 		if err != nil {
 			http.Error(w, "invalid token", http.StatusUnauthorized)
 			return

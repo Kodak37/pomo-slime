@@ -19,6 +19,9 @@ func main() {
 	if err := db.Init(); err != nil {
 		log.Fatal("DB初期化失敗:", err)
 	}
+	if err := handler.InitAuth(); err != nil {
+		log.Fatal("Auth初期化失敗:", err)
+	}
 
 	go func() {
 		ticker := time.NewTicker(5 * time.Minute)
