@@ -311,11 +311,6 @@ function PanelModal({ title, onClose, children }: { title: string; onClose: () =
 
   return (
     <>
-      {/* 背景オーバーレイ */}
-      <div
-        style={{ position: 'absolute', inset: 0, zIndex: 20, background: 'rgba(0,0,0,0.55)' }}
-        onClick={onClose}
-      />
       {/* パネル本体 */}
       <div style={{
         position: 'absolute', bottom: 0, left: 0, right: 0,
