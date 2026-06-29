@@ -268,8 +268,8 @@ function PlacedItem({
           key={dir}
           style={{
             ...handle,
-            ...(dir.includes('n') ? { top: -5 } : { bottom: -5 }),
-            ...(dir.includes('w') ? { left: -5 } : { right: -5 }),
+            ...(dir.includes('n') ? { top: 4 } : { bottom: 4 }),
+            ...(dir.includes('w') ? { left: 4 } : { right: 4 }),
             cursor: `${dir}-resize`,
           }}
           onPointerDown={e => onHandleDown(e, dir)}
