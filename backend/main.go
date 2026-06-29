@@ -34,7 +34,7 @@ func main() {
 
 	r := chi.NewRouter()
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins: []string{"*"},
+		AllowedOrigins: []string{"https://pomo-slime.onrender.com"},
 		AllowedMethods: []string{"GET", "POST", "PUT"},
 		AllowedHeaders: []string{"Content-Type", "Authorization"},
 	}))
