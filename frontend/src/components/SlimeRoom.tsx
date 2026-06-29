@@ -402,7 +402,7 @@ export function SlimeRoom({
         return
       }
 
-      setFacingLeft(dx < 0)
+      setFacingLeft(dx > 0)
       const newX = cur.x + (dx / dist) * speed
       const newY = cur.y + (dy / dist) * speed
       posRef.current = { x: newX, y: newY }
