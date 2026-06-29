@@ -40,14 +40,14 @@ export function Shop({ coins, onUpdate }: Props) {
       {/* ボーナス表示 */}
       {totalBonus > 0 && (
         <div className="pixel-box" style={{ padding: '12px 16px', textAlign: 'center' }}>
-          <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 10, color: 'var(--green)' }}>
+          <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 12, color: 'var(--green)' }}>
             ✦ 家具ボーナス: コイン +{Math.round(totalBonus * 5)}% UP
           </div>
         </div>
       )}
 
       <div className="pixel-box" style={{ padding: '18px 20px' }}>
-        <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 11, color: 'var(--text-dim)', marginBottom: 16 }}>
+        <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 13, color: 'var(--text-dim)', marginBottom: 16 }}>
           🛒 家具ショップ
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -60,14 +60,15 @@ export function Shop({ coins, onUpdate }: Props) {
                 padding: '10px 14px',
                 background: item.equipped ? 'rgba(74,222,128,0.08)' : 'rgba(0,0,0,0.2)',
                 border: `2px solid ${item.equipped ? 'var(--green)' : 'var(--border)'}`,
+                opacity: cantAfford ? 0.35 : 1,
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <span style={{ fontSize: 22 }}>{item.emoji}</span>
+                  <span style={{ fontSize: 24 }}>{item.emoji}</span>
                   <div>
-                    <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 10, color: item.equipped ? 'var(--green)' : 'var(--text)' }}>
+                    <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 12, color: item.equipped ? 'var(--green)' : 'var(--text)' }}>
                       {item.name} {item.equipped && '✓'}
                     </div>
-                    <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 9, color: 'var(--text-muted)', marginTop: 4 }}>
+                    <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
                       幸福度 +{item.happinessBonus}
                     </div>
                   </div>
@@ -75,7 +76,7 @@ export function Shop({ coins, onUpdate }: Props) {
                 <div style={{ flexShrink: 0 }}>
                   {item.owned ? (
                     <button onClick={() => toggle(item.id)} className="pixel-btn" style={{
-                      padding: '6px 12px', fontSize: 9,
+                      padding: '7px 14px', fontSize: 11,
                       background: item.equipped ? '#1a2a0a' : '#1a0f06',
                       color: item.equipped ? 'var(--green)' : 'var(--text-dim)',
                       borderColor: item.equipped ? 'var(--green)' : 'var(--border-lit)',
@@ -84,7 +85,7 @@ export function Shop({ coins, onUpdate }: Props) {
                     </button>
                   ) : (
                     <button onClick={() => buy(item.id)} disabled={cantAfford} className="pixel-btn" style={{
-                      padding: '6px 12px', fontSize: 9,
+                      padding: '7px 14px', fontSize: 11,
                       background: canBuy ? 'var(--accent)' : '#1a0f06',
                       color: canBuy ? '#000' : 'var(--text-muted)',
                       borderColor: canBuy ? 'var(--accent)' : 'var(--border)',

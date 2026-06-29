@@ -34,20 +34,20 @@ export function PomodoroLog() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {/* サマリー */}
       <div className="pixel-box" style={{ padding: '16px 20px' }}>
-        <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 11, color: 'var(--text-dim)', marginBottom: 14 }}>
+        <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 13, color: 'var(--text-dim)', marginBottom: 14 }}>
           📊 合計記録
         </div>
         <div style={{ display: 'flex', gap: 28 }}>
           <div>
-            <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}>完了回数</div>
-            <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 18, color: 'var(--accent)' }}>{logs.length}<span style={{ fontSize: 10 }}> 回</span></div>
+            <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>完了回数</div>
+            <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 18, color: 'var(--accent)' }}>{logs.length}<span style={{ fontSize: 12 }}> 回</span></div>
           </div>
           <div>
-            <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}>総作業時間</div>
-            <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 18, color: 'var(--accent2)' }}>{totalMin}<span style={{ fontSize: 10 }}> 分</span></div>
+            <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>総作業時間</div>
+            <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 18, color: 'var(--accent2)' }}>{totalMin}<span style={{ fontSize: 12 }}> 分</span></div>
           </div>
           <div>
-            <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}>獲得コイン</div>
+            <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>獲得コイン</div>
             <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 18, color: 'var(--accent)' }}>🪙{totalCoins}</div>
           </div>
         </div>
@@ -55,11 +55,11 @@ export function PomodoroLog() {
 
       {/* ログ一覧 */}
       <div className="pixel-box" style={{ padding: '16px 20px' }}>
-        <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 11, color: 'var(--text-dim)', marginBottom: 14 }}>
+        <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 13, color: 'var(--text-dim)', marginBottom: 14 }}>
           🍅 ポモドーロ履歴
         </div>
         {logs.length === 0 ? (
-          <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 10, color: 'var(--text-muted)', textAlign: 'center', padding: 20 }}>
+          <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 12, color: 'var(--text-muted)', textAlign: 'center', padding: 20 }}>
             まだ記録がありません
           </div>
         ) : (
@@ -69,20 +69,20 @@ export function PomodoroLog() {
               return (
                 <div key={l.id} style={{
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  padding: '8px 12px',
+                  padding: '10px 12px',
                   background: 'rgba(0,0,0,0.2)',
                   border: '1px solid var(--border)',
                 }}>
-                  <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 9, color: 'var(--text-muted)' }}>
+                  <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 11, color: 'var(--text-muted)' }}>
                     {fmt(l.completedAt)}
                   </div>
-                  <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 9, color: 'var(--text-dim)' }}>
+                  <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 11, color: 'var(--text-dim)' }}>
                     {l.durationMin}分
                   </div>
-                  <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 9, color: eff.color }}>
+                  <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 11, color: eff.color }}>
                     {eff.text}
                   </div>
-                  <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 9, color: 'var(--accent)' }}>
+                  <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 11, color: 'var(--accent)' }}>
                     🪙{l.coinsEarned}
                   </div>
                 </div>

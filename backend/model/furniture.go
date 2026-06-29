@@ -3,17 +3,22 @@ package model
 import "pomodoro-slime/db"
 
 type Furniture struct {
-	ID             int    `json:"id"`
-	Name           string `json:"name"`
-	Emoji          string `json:"emoji"`
-	Cost           int    `json:"cost"`
-	HappinessBonus int    `json:"happinessBonus"`
-	Owned          bool   `json:"owned"`
-	Equipped       bool   `json:"equipped"`
+	ID             int     `json:"id"`
+	Name           string  `json:"name"`
+	Emoji          string  `json:"emoji"`
+	Cost           int     `json:"cost"`
+	HappinessBonus int     `json:"happinessBonus"`
+	Owned          bool    `json:"owned"`
+	Equipped       bool    `json:"equipped"`
+	X              float64 `json:"x"`
+	Y              float64 `json:"y"`
+	W              float64 `json:"w"`
+	H              float64 `json:"h"`
+	FloorOnly      bool    `json:"floorOnly"`
 }
 
 func GetFurniture() ([]Furniture, error) {
-	rows, err := db.DB.Query(`SELECT id, name, emoji, cost, happiness_bonus, owned, equipped FROM furniture ORDER BY id`)
+	rows, err := db.DB.Query(`SELECT id, name, emoji, cost, happiness_bonus, owned, equipped, x, y, w, h, floor_only FROM furniture ORDER BY id`)
 	if err != nil {
 		return nil, err
 	}
@@ -21,12 +26,13 @@ func GetFurniture() ([]Furniture, error) {
 	var list []Furniture
 	for rows.Next() {
 		var f Furniture
-		var owned, equipped int
-		if err := rows.Scan(&f.ID, &f.Name, &f.Emoji, &f.Cost, &f.HappinessBonus, &owned, &equipped); err != nil {
+		var owned, equipped, floorOnly int
+		if err := rows.Scan(&f.ID, &f.Name, &f.Emoji, &f.Cost, &f.HappinessBonus, &owned, &equipped, &f.X, &f.Y, &f.W, &f.H, &floorOnly); err != nil {
 			return nil, err
 		}
 		f.Owned = owned == 1
 		f.Equipped = equipped == 1
+		f.FloorOnly = floorOnly == 1
 		list = append(list, f)
 	}
 	if list == nil {
@@ -60,4 +66,9 @@ func ToggleFurniture(id int) ([]Furniture, error) {
 	}
 	UpdateHappinessBonus()
 	return GetFurniture()
+}
+
+func UpdateFurnitureLayout(id int, x, y, w, h float64) error {
+	_, err := db.DB.Exec(`UPDATE furniture SET x=?, y=?, w=?, h=? WHERE id=?`, x, y, w, h, id)
+	return err
 }

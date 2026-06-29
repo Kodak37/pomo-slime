@@ -3,6 +3,8 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -28,7 +30,7 @@ func main() {
 
 	r := chi.NewRouter()
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins: []string{"http://localhost:5173"},
+		AllowedOrigins: []string{"*"},
 		AllowedMethods: []string{"GET", "POST", "PUT"},
 		AllowedHeaders: []string{"Content-Type"},
 	}))
@@ -51,11 +53,32 @@ func main() {
 	r.Get("/api/furniture", handler.GetFurniture)
 	r.Post("/api/furniture/{id}/buy", handler.BuyFurniture)
 	r.Post("/api/furniture/{id}/toggle", handler.ToggleFurniture)
+	r.Put("/api/furniture/{id}/layout", handler.UpdateFurnitureLayout)
 
 	// room
 	r.Get("/api/room", handler.GetRoom)
 	r.Put("/api/room", handler.UpdateRoom)
 
-	log.Println("サーバー起動: http://localhost:8080")
-	http.ListenAndServe(":8080", r)
+	// フロントエンド静的ファイル配信（本番環境）
+	frontendDist := "./frontend/dist"
+	if _, err := os.Stat(frontendDist); err == nil {
+		fileServer := http.FileServer(http.Dir(frontendDist))
+		r.Handle("/*", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			path := filepath.Join(frontendDist, filepath.Clean("/"+r.URL.Path))
+			if _, err := os.Stat(path); os.IsNotExist(err) {
+				http.ServeFile(w, r, filepath.Join(frontendDist, "index.html"))
+				return
+			}
+			fileServer.ServeHTTP(w, r)
+		}))
+	}
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	log.Printf("サーバー起動: http://localhost:%s\n", port)
+	if err := http.ListenAndServe(":"+port, r); err != nil {
+		log.Fatal(err)
+	}
 }

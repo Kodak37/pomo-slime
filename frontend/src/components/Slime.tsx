@@ -24,6 +24,40 @@ const THRESHOLDS = [
   { value: 15, label: '瀕死になる' },
 ]
 
+const STATUS_CFG: Record<SlimeStatus, { gif: string; label: string; color: string; extraFilter: string; opacity: number }> = {
+  dying:          { gif: '/slime/idle.gif', label: '元気がない…',       color: '#64748b', extraFilter: 'grayscale(85%) brightness(0.45)', opacity: 0.55 },
+  hungry:         { gif: '/slime/idle.gif', label: 'ちょっと元気がない', color: '#94a3b8', extraFilter: 'saturate(0.55) brightness(0.75)',  opacity: 0.8  },
+  normal:         { gif: '/slime/idle.gif', label: 'ふつう',             color: '#86efac', extraFilter: '',                                opacity: 1    },
+  slightly_happy: { gif: '/slime/jump.gif', label: 'ちょっと元気！',     color: '#34d399', extraFilter: '',                                opacity: 1    },
+  happy:          { gif: '/slime/move.gif', label: '元気いっぱい！！',   color: '#fbbf24', extraFilter: '',                                opacity: 1    },
+}
+
+const BASE_HUE = 200
+
+function hexToHue(hex: string): number {
+  const r = parseInt(hex.slice(1, 3), 16) / 255
+  const g = parseInt(hex.slice(3, 5), 16) / 255
+  const b = parseInt(hex.slice(5, 7), 16) / 255
+  const max = Math.max(r, g, b), min = Math.min(r, g, b)
+  if (max === min) return 0
+  const d = max - min
+  let h = 0
+  if (max === r)      h = ((g - b) / d + (g < b ? 6 : 0)) / 6
+  else if (max === g) h = ((b - r) / d + 2) / 6
+  else                h = ((r - g) / d + 4) / 6
+  return Math.round(h * 360)
+}
+
+function buildFilter(bodyColor: string, status: SlimeStatus): string {
+  const cfg = STATUS_CFG[status]
+  if (status === 'dying') return cfg.extraFilter
+  const hue = hexToHue(bodyColor)
+  const rotate = hue - BASE_HUE
+  const desat = bodyColor === '#94a3b8' ? ' saturate(0.25)' : ''
+  const extra = cfg.extraFilter ? ` ${cfg.extraFilter}` : ''
+  return `hue-rotate(${rotate}deg)${desat}${extra}`
+}
+
 function calcTimeUntil(hunger: number, updatedAt: string): string | null {
   const elapsed = (Date.now() - new Date(updatedAt).getTime()) / 60000
   const eff = Math.max(0, hunger - elapsed * DECAY_PER_MIN)
@@ -35,63 +69,22 @@ function calcTimeUntil(hunger: number, updatedAt: string): string | null {
   return `約 ${Math.floor(min / 60)}時間${Math.floor(min % 60) > 0 ? `${Math.floor(min % 60)}分` : ''}後に${next.label}`
 }
 
-const STATUS_CFG: Record<SlimeStatus, { label: string; color: string; eye: string; anim: string; dur: string; shadow: string; opacity: number }> = {
-  dying:          { label: '元気がない…',       color: '#64748b', eye: 'closed',  anim: 'slime-dying',          dur: '3s',    shadow: 'rgba(74,138,191,0.2)',  opacity: 0.5  },
-  hungry:         { label: 'ちょっと元気がない', color: '#94a3b8', eye: 'sad',     anim: 'slime-hungry',         dur: '2.5s',  shadow: 'rgba(107,158,99,0.3)',  opacity: 0.75 },
-  normal:         { label: 'ふつう',             color: '#86efac', eye: 'normal',  anim: 'slime-normal',         dur: '1.8s',  shadow: 'rgba(74,222,128,0.35)', opacity: 1    },
-  slightly_happy: { label: 'ちょっと元気！',     color: '#34d399', eye: 'happy',   anim: 'slime-slightly-happy', dur: '1.2s',  shadow: 'rgba(52,211,153,0.5)', opacity: 1    },
-  happy:          { label: '元気いっぱい！！',   color: '#fbbf24', eye: 'excited', anim: 'slime-happy',          dur: '0.75s', shadow: 'rgba(74,222,128,0.7)', opacity: 1    },
-}
-
-function buildBodyGradient(baseColor: string, status: SlimeStatus): string {
-  if (status === 'dying') return `radial-gradient(ellipse at 40% 35%, #b0c8e8 0%, #7eafd6 40%, #4a8abf 100%)`
-  return `radial-gradient(ellipse at 40% 30%, #ffffff55 0%, ${baseColor} 40%, ${baseColor}aa 100%)`
-}
-
-function Eyes({ style }: { style: string }) {
-  const base: React.CSSProperties = { background: '#1e3a5f', borderRadius: '50%' }
-  if (style === 'closed') return (
-    <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginBottom: 2 }}>
-      {[0,1].map(i => <div key={i} style={{ width: 12, height: 4, background: '#1e3a5f', borderRadius: 2 }} />)}
-    </div>
-  )
-  if (style === 'sad') return (
-    <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginBottom: 2 }}>
-      {[0,1].map(i => <div key={i} style={{ ...base, width: 9, height: 9, marginTop: 5 }} />)}
-    </div>
-  )
-  if (style === 'normal') return (
-    <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginBottom: 2 }}>
-      {[0,1].map(i => <div key={i} style={{ ...base, width: 10, height: 10 }} />)}
-    </div>
-  )
-  if (style === 'happy') return (
-    <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginBottom: 2 }}>
-      {[-5,5].map((r,i) => <div key={i} style={{ ...base, width: 12, height: 7, borderRadius: '50% 50% 0 0', transform: `rotate(${r}deg)` }} />)}
-    </div>
-  )
-  return (
-    <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 2 }}>
-      {[0,1].map(i => <div key={i} style={{ ...base, width: 13, height: 13, border: '2px solid #fef9c3' }} />)}
-    </div>
-  )
-}
-
 function Hat({ type }: { type: string }) {
-  if (type === 'crown') return <div style={{ fontSize: 18, textAlign: 'center', marginBottom: -4 }}>👑</div>
-  if (type === 'santa') return <div style={{ fontSize: 18, textAlign: 'center', marginBottom: -4 }}>🎅</div>
-  if (type === 'helmet') return <div style={{ fontSize: 18, textAlign: 'center', marginBottom: -4 }}>⛑️</div>
+  if (type === 'crown')  return <div style={{ fontSize: 22, textAlign: 'center', marginBottom: -8, zIndex: 1 }}>👑</div>
+  if (type === 'santa')  return <div style={{ fontSize: 22, textAlign: 'center', marginBottom: -8, zIndex: 1 }}>🎅</div>
+  if (type === 'helmet') return <div style={{ fontSize: 22, textAlign: 'center', marginBottom: -8, zIndex: 1 }}>⛑️</div>
   return null
 }
 
 export function Slime({ slime, bodyColor = '#4ade80', hatType = 'none', onNameUpdate }: Props) {
-  const [editing, setEditing] = useState(false)
+  const [editing, setEditing]   = useState(false)
   const [nameInput, setNameInput] = useState(slime.name)
-  const cfg = STATUS_CFG[slime.status] ?? STATUS_CFG.normal
-  const timeMsg = calcTimeUntil(slime.hunger, slime.updatedAt)
+  const cfg      = STATUS_CFG[slime.status] ?? STATUS_CFG.normal
+  const timeMsg  = calcTimeUntil(slime.hunger, slime.updatedAt)
   const isCritical = slime.status === 'hungry' || slime.status === 'dying'
+  const imgFilter  = buildFilter(bodyColor, slime.status)
 
-  const segs = 10
+  const segs   = 10
   const filled = Math.round((slime.hunger / 100) * segs)
   const barColor = slime.hunger >= 60 ? 'var(--green)' : slime.hunger >= 30 ? 'var(--accent)' : 'var(--red)'
 
@@ -106,10 +99,9 @@ export function Slime({ slime, bodyColor = '#4ade80', hatType = 'none', onNameUp
     setEditing(false)
   }
 
-  const bodyGrad = buildBodyGradient(bodyColor, slime.status)
-
   return (
     <div className="pixel-box" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, padding: 24 }}>
+
       {/* 名前 */}
       {editing ? (
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -139,27 +131,26 @@ export function Slime({ slime, bodyColor = '#4ade80', hatType = 'none', onNameUp
       )}
 
       {/* スライム本体 */}
-      <div style={{ height: 155, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end' }}>
+      <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <Hat type={hatType} />
-        <div style={{
-          width: 120, height: 120,
-          background: bodyGrad,
-          borderRadius: '50% 50% 46% 54% / 60% 60% 40% 40%',
-          animation: `${cfg.anim} ${cfg.dur} ease-in-out infinite`,
-          opacity: cfg.opacity,
-          boxShadow: `0 10px 28px ${cfg.shadow}, inset 0 -10px 18px rgba(0,0,0,0.2)`,
-          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          position: 'relative',
-        }}>
-          <div style={{ position: 'absolute', top: 20, left: 24, width: 26, height: 15, background: 'rgba(255,255,255,0.42)', borderRadius: '50%', transform: 'rotate(-25deg)' }} />
-          <Eyes style={cfg.eye} />
-          {slime.status !== 'dying' && (
-            <div style={{ width: slime.status === 'happy' || slime.status === 'slightly_happy' ? 24 : 16, height: 7, background: '#1e3a5f', borderRadius: '0 0 8px 8px', marginTop: 4 }} />
-          )}
-        </div>
+        <img
+          src={cfg.gif}
+          alt="slime"
+          style={{
+            width: 160,
+            height: 160,
+            objectFit: 'contain',
+            imageRendering: 'pixelated',
+            filter: imgFilter,
+            opacity: cfg.opacity,
+            transition: 'filter 0.4s ease, opacity 0.4s ease',
+          }}
+        />
       </div>
 
-      <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 11, color: cfg.color, textAlign: 'center' }}>{cfg.label}</div>
+      <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 11, color: cfg.color, textAlign: 'center' }}>
+        {cfg.label}
+      </div>
 
       {/* 空腹度バー */}
       <div style={{ width: '100%' }}>

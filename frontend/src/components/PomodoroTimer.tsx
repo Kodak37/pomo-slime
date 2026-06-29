@@ -72,22 +72,22 @@ export function PomodoroTimer({ onPomodoroComplete, pomodoroCount, onBreakStart 
   return (
     <div className="pixel-box" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18, padding: 28 }}>
       {/* フェーズ */}
-      <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 13, color, letterSpacing: 2 }}>
+      <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 14, color, letterSpacing: 2 }}>
         {phase === 'work' ? '🍅 作業タイム' : '☕ 休憩タイム'}
       </div>
 
       {/* 時間設定（停止中のみ） */}
       {!running && phase === 'work' && (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-          <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 10, color: 'var(--text-muted)' }}>作業時間を設定</div>
+          <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 13, color: 'var(--text-muted)' }}>作業時間を設定</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <button onClick={() => setDurationMin(m => Math.max(5, m - 5))} className="pixel-btn" style={{ padding: '6px 12px', fontSize: 13, background: '#1a0f06', color: 'var(--text-dim)', borderColor: 'var(--border)' }}>－</button>
-            <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 20, color: 'var(--text)', minWidth: 60, textAlign: 'center' }}>
-              {durationMin}<span style={{ fontSize: 10 }}>分</span>
+            <button onClick={() => setDurationMin(m => Math.max(5, m - 5))} className="pixel-btn" style={{ padding: '8px 14px', fontSize: 14, background: '#1a0f06', color: 'var(--text-dim)', borderColor: 'var(--border)' }}>－</button>
+            <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 22, color: 'var(--text)', minWidth: 60, textAlign: 'center' }}>
+              {durationMin}<span style={{ fontSize: 13 }}>分</span>
             </div>
-            <button onClick={() => setDurationMin(m => Math.min(60, m + 5))} className="pixel-btn" style={{ padding: '6px 12px', fontSize: 13, background: '#1a0f06', color: 'var(--text-dim)', borderColor: 'var(--border)' }}>＋</button>
+            <button onClick={() => setDurationMin(m => Math.min(60, m + 5))} className="pixel-btn" style={{ padding: '8px 14px', fontSize: 14, background: '#1a0f06', color: 'var(--text-dim)', borderColor: 'var(--border)' }}>＋</button>
           </div>
-          <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 9, color: isOptimal ? 'var(--green)' : 'var(--accent)' }}>
+          <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 11, color: isOptimal ? 'var(--green)' : 'var(--accent)' }}>
             {isOptimal ? '✦ 最高効率（25分）' : `コイン効率: ${Math.round(mult * 100)}%`}
           </div>
         </div>
@@ -107,15 +107,15 @@ export function PomodoroTimer({ onPomodoroComplete, pomodoroCount, onBreakStart 
 
       {/* ボタン */}
       <div style={{ display: 'flex', gap: 12 }}>
-        <button onClick={toggle} className="pixel-btn" style={{ padding: '12px 28px', fontSize: 12, background: running ? '#1a0f06' : color, color: running ? 'var(--text-dim)' : '#000', borderColor: color }}>
+        <button onClick={toggle} className="pixel-btn" style={{ padding: '13px 30px', fontSize: 14, background: running ? '#1a0f06' : color, color: running ? 'var(--text-dim)' : '#000', borderColor: color }}>
           {running ? '⏸ 一時停止' : '▶ スタート'}
         </button>
-        <button onClick={reset} className="pixel-btn" style={{ padding: '12px 16px', fontSize: 11, background: '#1a0f06', color: 'var(--text-dim)', borderColor: 'var(--border)' }}>
+        <button onClick={reset} className="pixel-btn" style={{ padding: '13px 18px', fontSize: 13, background: '#1a0f06', color: 'var(--text-dim)', borderColor: 'var(--border)' }}>
           ↺ リセット
         </button>
       </div>
 
-      <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 10, color: 'var(--text-muted)', textAlign: 'center', lineHeight: 2 }}>
+      <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 12, color: 'var(--text-muted)', textAlign: 'center', lineHeight: 2 }}>
         本日: <span style={{ color: 'var(--accent)' }}>{pomodoroCount}</span> 回完了
         {pomodoroCount >= 3 && <span style={{ color: 'var(--green)' }}>&nbsp;✦ボーナス中</span>}
       </div>
