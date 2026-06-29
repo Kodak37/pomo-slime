@@ -89,7 +89,7 @@ function CatchGame({ onResult }: { onResult: (coins: number) => void }) {
 function MoleGame({ onResult }: { onResult: (coins: number) => void }) {
   const DURATION  = 30
   const REWARD    = 4
-  const MOLES_EMO = ['🟢','🟩','💚']
+  const MOLES_GIF = ['/slime/jump.gif', '/slime/idle.gif', '/slime/jump.gif']
 
   const [phase,   setPhase]   = useState<'ready' | 'playing' | 'result'>('ready')
   const [moles,   setMoles]   = useState<boolean[]>(Array(9).fill(false))
@@ -163,7 +163,9 @@ function MoleGame({ onResult }: { onResult: (coins: number) => void }) {
                   userSelect: 'none',
                 }}
               >
-                {hasMole ? MOLES_EMO[i % MOLES_EMO.length] : '⚫'}
+                {hasMole
+                  ? <img src={MOLES_GIF[i % MOLES_GIF.length]} alt="slime" style={{ width:44, height:44, imageRendering:'pixelated' }} />
+                  : '⚫'}
               </div>
             ))}
           </div>
@@ -298,9 +300,11 @@ function DodgeGame({ onResult }: { onResult: (coins: number) => void }) {
             <div style={{ position:'absolute', bottom:0, left:0, right:0, height:4, background:'var(--border)' }} />
 
             {/* スライム */}
-            <div style={{ position:'absolute', left:SLIME_X, top:slimeY.current, fontSize:28, lineHeight:1, transition:'none' }}>
-              🟢
-            </div>
+            <img
+              src={vy.current < -1 ? '/slime/jump.gif' : '/slime/move.gif'}
+              alt="slime"
+              style={{ position:'absolute', left:SLIME_X, top:slimeY.current, width:SLIME_H, height:SLIME_H, imageRendering:'pixelated' }}
+            />
 
             {/* 障害物 */}
             {obstacles.current.map(o => (
@@ -325,7 +329,7 @@ function DodgeGame({ onResult }: { onResult: (coins: number) => void }) {
 // ─────────────────────────────────────────────
 const GAME_LIST = [
   { id: 'catch', label: '🍎 食べ物キャッチ', desc: '落ちてくる食べ物をタップ' },
-  { id: 'mole',  label: '🟢 もぐらたたき',  desc: '飛び出たスライムをたたけ' },
+  { id: 'mole',  label: '🐾 もぐらたたき',  desc: '飛び出たスライムをたたけ' },
   { id: 'dodge', label: '🏃 障害物よけ',    desc: 'ジャンプして障害物をよけろ' },
 ] as const
 type GameId = typeof GAME_LIST[number]['id']
