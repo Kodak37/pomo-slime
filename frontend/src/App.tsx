@@ -159,7 +159,6 @@ export default function App() {
       backgroundSize: '14px 14px, 100% 100%',
       backgroundColor: currentTheme.wall,
     }}>
-      <div className="pixel-window" />
 
       {/* ヘッダー */}
       <div style={{ textAlign:'center', padding:'28px 0 16px', position:'relative', zIndex:2 }}>
