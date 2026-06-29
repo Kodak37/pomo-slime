@@ -288,8 +288,9 @@ function PlacedItem({
       onPointerMove={onBodyMove}
       onPointerUp={onBodyUp}
       onPointerCancel={onBodyUp}
+      onClick={e => e.stopPropagation()}
     >
-      <span style={{ fontSize: `min(${item.w * 0.9}vw, ${item.h * 0.75}vh)`, lineHeight: 1, pointerEvents: 'none' }}>
+      <span style={{ fontSize: `min(${Math.min(item.w, item.h * 2) * 1.1}vw, ${Math.min(item.h * 1.5, item.w * 0.6) * 1.0}vh, 5rem)`, lineHeight: 1, pointerEvents: 'none' }}>
         {item.emoji}
       </span>
 
@@ -306,6 +307,7 @@ function PlacedItem({
           onPointerMove={onHandleMove}
           onPointerUp={onHandleUp}
           onPointerCancel={onHandleUp}
+          onClick={e => e.stopPropagation()}
         />
       ))}
     </div>
