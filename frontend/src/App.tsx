@@ -133,7 +133,7 @@ export default function App() {
           const locked = timerRunning && t.id !== 'work'
           return (
             <button key={t.id} onClick={() => handleTabChange(t.id)} className="pixel-btn" style={{
-              padding:'10px 20px', fontSize:11,
+              padding:'13px 26px', fontSize:14,
               background: active ? 'var(--accent)' : locked ? '#120803' : '#1a0f06',
               color: active ? '#000' : locked ? 'var(--text-muted)' : 'var(--text-dim)',
               borderColor: active ? 'var(--accent)' : locked ? 'var(--border)' : 'var(--border-lit)',
