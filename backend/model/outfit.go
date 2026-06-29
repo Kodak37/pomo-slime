@@ -13,8 +13,15 @@ type Outfit struct {
 	Equipped    bool   `json:"equipped"`
 }
 
-func GetOutfits() ([]Outfit, error) {
-	rows, err := db.DB.Query(`SELECT id, name, description, cost, body_color, hat_type, owned, equipped FROM outfits ORDER BY id`)
+func GetOutfits(userID string) ([]Outfit, error) {
+	rows, err := db.DB.Query(`
+		SELECT o.id, o.name, o.description, o.cost, o.body_color, o.hat_type,
+		       (uo.user_id IS NOT NULL) AS owned,
+		       COALESCE(uo.equipped, FALSE) AS equipped
+		FROM outfits o
+		LEFT JOIN user_outfits uo ON uo.outfit_id = o.id AND uo.user_id = $1
+		ORDER BY o.id
+	`, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -22,12 +29,9 @@ func GetOutfits() ([]Outfit, error) {
 	var list []Outfit
 	for rows.Next() {
 		var o Outfit
-		var owned, equipped int
-		if err := rows.Scan(&o.ID, &o.Name, &o.Description, &o.Cost, &o.BodyColor, &o.HatType, &owned, &equipped); err != nil {
+		if err := rows.Scan(&o.ID, &o.Name, &o.Description, &o.Cost, &o.BodyColor, &o.HatType, &o.Owned, &o.Equipped); err != nil {
 			return nil, err
 		}
-		o.Owned = owned == 1
-		o.Equipped = equipped == 1
 		list = append(list, o)
 	}
 	if list == nil {
@@ -36,36 +40,28 @@ func GetOutfits() ([]Outfit, error) {
 	return list, nil
 }
 
-func BuyOutfit(id int) ([]Outfit, error) {
-	s, err := GetSlime()
+func BuyOutfit(userID string, id int) ([]Outfit, error) {
+	s, err := GetSlime(userID)
 	if err != nil {
 		return nil, err
 	}
 	var cost int
-	var owned int
-	db.DB.QueryRow(`SELECT cost, owned FROM outfits WHERE id = ?`, id).Scan(&cost, &owned)
-	if owned == 1 || s.Coins < cost {
-		return GetOutfits()
+	db.DB.QueryRow(`SELECT cost FROM outfits WHERE id = $1`, id).Scan(&cost)
+	if s.Coins < cost {
+		return GetOutfits(userID)
 	}
-	db.DB.Exec(`UPDATE slime SET coins = coins - ? WHERE id = 1`, cost)
-	db.DB.Exec(`UPDATE outfits SET owned = 1 WHERE id = ?`, id)
-	return GetOutfits()
+	var owned bool
+	db.DB.QueryRow(`SELECT EXISTS(SELECT 1 FROM user_outfits WHERE user_id = $1 AND outfit_id = $2)`, userID, id).Scan(&owned)
+	if owned {
+		return GetOutfits(userID)
+	}
+	db.DB.Exec(`UPDATE slimes SET coins = coins - $1 WHERE user_id = $2`, cost, userID)
+	db.DB.Exec(`INSERT INTO user_outfits (user_id, outfit_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`, userID, id)
+	return GetOutfits(userID)
 }
 
-func EquipOutfit(id int) ([]Outfit, error) {
-	db.DB.Exec(`UPDATE outfits SET equipped = 0`)
-	db.DB.Exec(`UPDATE outfits SET equipped = 1 WHERE id = ? AND owned = 1`, id)
-	return GetOutfits()
-}
-
-func GetEquippedOutfit() (*Outfit, error) {
-	row := db.DB.QueryRow(`SELECT id, name, description, cost, body_color, hat_type, owned, equipped FROM outfits WHERE equipped = 1 LIMIT 1`)
-	var o Outfit
-	var owned, equipped int
-	if err := row.Scan(&o.ID, &o.Name, &o.Description, &o.Cost, &o.BodyColor, &o.HatType, &owned, &equipped); err != nil {
-		return nil, err
-	}
-	o.Owned = true
-	o.Equipped = true
-	return &o, nil
+func EquipOutfit(userID string, id int) ([]Outfit, error) {
+	db.DB.Exec(`UPDATE user_outfits SET equipped = FALSE WHERE user_id = $1`, userID)
+	db.DB.Exec(`UPDATE user_outfits SET equipped = TRUE WHERE user_id = $1 AND outfit_id = $2`, userID, id)
+	return GetOutfits(userID)
 }

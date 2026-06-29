@@ -7,7 +7,8 @@ import (
 )
 
 func GetSlime(w http.ResponseWriter, r *http.Request) {
-	s, err := model.GetSlime()
+	uid := GetUserID(r)
+	s, err := model.GetOrCreateSlime(uid)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -16,6 +17,7 @@ func GetSlime(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdateName(w http.ResponseWriter, r *http.Request) {
+	uid := GetUserID(r)
 	var body struct {
 		Name string `json:"name"`
 	}
@@ -23,7 +25,7 @@ func UpdateName(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid name", http.StatusBadRequest)
 		return
 	}
-	s, err := model.UpdateName(body.Name)
+	s, err := model.UpdateName(uid, body.Name)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -32,6 +34,7 @@ func UpdateName(w http.ResponseWriter, r *http.Request) {
 }
 
 func PomodoroComplete(w http.ResponseWriter, r *http.Request) {
+	uid := GetUserID(r)
 	var body struct {
 		PomodoroCount int `json:"pomodoroCount"`
 		DurationMin   int `json:"durationMin"`
@@ -40,7 +43,7 @@ func PomodoroComplete(w http.ResponseWriter, r *http.Request) {
 	if body.DurationMin <= 0 {
 		body.DurationMin = 25
 	}
-	s, err := model.AddPomodoroCoins(body.PomodoroCount, body.DurationMin)
+	s, err := model.AddPomodoroCoins(uid, body.PomodoroCount, body.DurationMin)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -49,13 +52,14 @@ func PomodoroComplete(w http.ResponseWriter, r *http.Request) {
 }
 
 func Feed(w http.ResponseWriter, r *http.Request) {
+	uid := GetUserID(r)
 	var body struct {
 		Cost int `json:"cost"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Cost <= 0 {
 		body.Cost = 5
 	}
-	s, err := model.Feed(body.Cost)
+	s, err := model.Feed(uid, body.Cost)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

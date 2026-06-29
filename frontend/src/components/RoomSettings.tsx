@@ -1,4 +1,6 @@
 
+import { apiFetch } from '../lib/api'
+
 const THEMES = [
   { id: 'warm',   label: '暖かい部屋',  wall: '#2c1a0e', floor: '#160b03', dot: 'rgba(255,180,80,0.10)' },
   { id: 'forest', label: '夜の森',      wall: '#0d1f0d', floor: '#050e05', dot: 'rgba(80,200,80,0.08)'  },
@@ -14,7 +16,7 @@ interface Props {
 
 export function RoomSettings({ currentTheme, onThemeChange }: Props) {
   async function setTheme(id: string) {
-    await fetch('/api/room', {
+    await apiFetch('/api/room', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ theme: id }),

@@ -10,7 +10,8 @@ import (
 )
 
 func GetOutfits(w http.ResponseWriter, r *http.Request) {
-	list, err := model.GetOutfits()
+	uid := GetUserID(r)
+	list, err := model.GetOutfits(uid)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -19,8 +20,9 @@ func GetOutfits(w http.ResponseWriter, r *http.Request) {
 }
 
 func BuyOutfit(w http.ResponseWriter, r *http.Request) {
+	uid := GetUserID(r)
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
-	list, err := model.BuyOutfit(id)
+	list, err := model.BuyOutfit(uid, id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -29,8 +31,9 @@ func BuyOutfit(w http.ResponseWriter, r *http.Request) {
 }
 
 func EquipOutfit(w http.ResponseWriter, r *http.Request) {
+	uid := GetUserID(r)
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
-	list, err := model.EquipOutfit(id)
+	list, err := model.EquipOutfit(uid, id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

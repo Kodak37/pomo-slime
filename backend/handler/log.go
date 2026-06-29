@@ -7,7 +7,8 @@ import (
 )
 
 func GetLogs(w http.ResponseWriter, r *http.Request) {
-	logs, err := model.GetLogs(50)
+	uid := GetUserID(r)
+	logs, err := model.GetLogs(uid, 50)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

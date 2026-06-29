@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import type { Session } from '@supabase/supabase-js'
 import { PomodoroTimer } from './components/PomodoroTimer'
 import { SlimeRoom } from './components/SlimeRoom'
 import { PomodoroLog } from './components/PomodoroLog'
@@ -6,12 +7,15 @@ import { MiniGame } from './components/MiniGame'
 import { Customization } from './components/Customization'
 import { Shop } from './components/Shop'
 import { RoomSettings, THEMES } from './components/RoomSettings'
+import { AuthPage } from './components/AuthPage'
+import { initSupabase, getSupabase } from './lib/supabase'
+import { apiFetch, setAuthToken } from './lib/api'
 import './index.css'
 
 type Tab = 'work' | 'slime' | 'log' | 'settings'
 
 interface SlimeData {
-  id: number; name: string; hunger: number; coins: number
+  id: string; name: string; hunger: number; coins: number
   pomodoroCount: number; status: 'happy'|'slightly_happy'|'normal'|'hungry'|'dying'
   updatedAt: string; happinessBonus: number
 }
@@ -31,6 +35,8 @@ function workTabTimer(hunger: number, updatedAt: string): string {
 }
 
 export default function App() {
+  const [authReady,    setAuthReady]    = useState(false)
+  const [session,      setSession]      = useState<Session | null>(null)
   const [tab,          setTab]          = useState<Tab>('work')
   const [slime,        setSlime]        = useState<SlimeData | null>(null)
   const [notification, setNotification] = useState<string | null>(null)
@@ -40,30 +46,49 @@ export default function App() {
   const [theme,        setTheme]        = useState('warm')
   const [outfit,       setOutfit]       = useState<Outfit | null>(null)
 
+  // Supabase初期化 + 認証状態の監視
+  useEffect(() => {
+    initSupabase().then(sb => {
+      sb.auth.getSession().then(({ data }) => {
+        const s = data.session
+        if (s) setAuthToken(s.access_token)
+        setSession(s)
+        setAuthReady(true)
+      })
+      sb.auth.onAuthStateChange((_event, s) => {
+        if (s) setAuthToken(s.access_token)
+        else setAuthToken('')
+        setSession(s)
+        setAuthReady(true)
+      })
+    })
+  }, [])
+
   const fetchSlime = useCallback(async () => {
-    const data = await fetch('/api/slime').then(r => r.json())
+    const data = await apiFetch('/api/slime').then(r => r.json())
     setSlime(data)
     setSlimeAlert(data.status === 'dying' || data.status === 'hungry')
   }, [])
 
   const fetchOutfit = useCallback(async () => {
-    const list: Outfit[] = await fetch('/api/outfits').then(r => r.json())
+    const list: Outfit[] = await apiFetch('/api/outfits').then(r => r.json())
     setOutfit(list.find(o => o.equipped) ?? null)
   }, [])
 
   useEffect(() => {
+    if (!session) return
     fetchSlime()
     fetchOutfit()
-    fetch('/api/room').then(r => r.json()).then(d => setTheme(d.theme))
+    apiFetch('/api/room').then(r => r.json()).then(d => setTheme(d.theme))
     const id = setInterval(fetchSlime, 10000)
     return () => clearInterval(id)
-  }, [fetchSlime, fetchOutfit])
+  }, [session, fetchSlime, fetchOutfit])
 
   function showNotif(msg: string) { setNotification(msg); setTimeout(() => setNotification(null), 3000) }
 
   async function handlePomodoroComplete(count: number, durationMin: number) {
-    const data = await fetch('/api/pomodoro/done', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+    const data = await apiFetch('/api/pomodoro/done', {
+      method: 'POST',
       body: JSON.stringify({ pomodoroCount: count, durationMin }),
     }).then(r => r.json())
     setSlime(data)
@@ -78,8 +103,8 @@ export default function App() {
 
   async function handleFeed(cost: number) {
     if (!slime || slime.coins < cost) { showNotif('コインが足りない…'); return }
-    const data = await fetch('/api/feed', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+    const data = await apiFetch('/api/feed', {
+      method: 'POST',
       body: JSON.stringify({ cost }),
     }).then(r => r.json())
     setSlime(data)
@@ -91,6 +116,12 @@ export default function App() {
     setTab(t)
   }
 
+  async function handleLogout() {
+    await getSupabase().auth.signOut()
+    setSlime(null)
+    setTab('work')
+  }
+
   const currentTheme = THEMES.find(t => t.id === theme) ?? THEMES[0]
 
   const TABS: { id: Tab; label: string; badge?: boolean }[] = [
@@ -100,6 +131,17 @@ export default function App() {
     { id: 'settings', label: '⚙ 設定' },
   ]
 
+  // 初期化待ち
+  if (!authReady) return (
+    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', minHeight:'100vh', background:'var(--bg-wall)' }}>
+      <div style={{ fontFamily:'var(--pixel-font)', fontSize:14, color:'var(--accent)' }}>よみこみ中…</div>
+    </div>
+  )
+
+  // 未ログイン
+  if (!session) return <AuthPage />
+
+  // スライムデータ読み込み待ち
   if (!slime) return (
     <div style={{ display:'flex', alignItems:'center', justifyContent:'center', minHeight:'100vh', background:'var(--bg-wall)' }}>
       <div style={{ fontFamily:'var(--pixel-font)', fontSize:14, color:'var(--accent)' }}>よみこみ中…</div>
@@ -124,6 +166,14 @@ export default function App() {
         <h1 style={{ fontFamily:'var(--pixel-font)', fontSize:18, color:'var(--text)', letterSpacing:3, textShadow:'0 0 20px rgba(245,158,11,0.6)', margin:0 }}>
           🍅 ポモスライム
         </h1>
+        {/* ログアウトボタン */}
+        <button onClick={handleLogout} className="pixel-btn" style={{
+          position:'absolute', top:28, right:16,
+          padding:'6px 12px', fontSize:9,
+          background:'#1a0f06', color:'var(--text-muted)', borderColor:'var(--border)',
+        }}>
+          ログアウト
+        </button>
       </div>
 
       {/* タブ */}
@@ -166,7 +216,7 @@ export default function App() {
         />
       )}
 
-      {/* スライムタブ: 全幅ルームビュー */}
+      {/* スライムタブ */}
       {tab === 'slime' && (
         <div style={{ position:'relative', zIndex:2 }}>
           <SlimeRoom
@@ -183,11 +233,9 @@ export default function App() {
         </div>
       )}
 
-      {/* 作業・ログ・設定タブ: 560px幅 */}
-      {/* 作業タブは常にマウントしてdisplayで切り替え（タイマー状態を保持するため） */}
+      {/* 作業・ログ・設定タブ */}
       <div style={{ display: tab === 'slime' ? 'none' : 'block', maxWidth:560, margin:'0 auto', padding:'0 16px 48px', position:'relative', zIndex:2 }}>
 
-        {/* 作業タブ: 常にマウント */}
         <div style={{ display: tab === 'work' ? 'flex' : 'none', flexDirection:'column', gap:18 }}>
           <PomodoroTimer
             onPomodoroComplete={handlePomodoroComplete}
@@ -219,10 +267,8 @@ export default function App() {
           </div>
         </div>
 
-        {/* ログタブ */}
         {tab === 'log' && <PomodoroLog />}
 
-        {/* 設定タブ */}
         {tab === 'settings' && (
           <div style={{ display:'flex', flexDirection:'column', gap:18 }}>
             <RoomSettings currentTheme={theme} onThemeChange={setTheme} />
