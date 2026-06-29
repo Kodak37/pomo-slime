@@ -551,26 +551,26 @@ export function SlimeRoom({
           ) : (
             <div
               onClick={() => { setNameInput(slime.name); setEditing(true) }}
-              style={{ fontFamily: 'var(--pixel-font)', fontSize: 10, color: 'var(--text-dim)', cursor: 'pointer', marginBottom: 8 }}
+              style={{ fontFamily: 'var(--pixel-font)', fontSize: 13, color: 'var(--text-dim)', cursor: 'pointer', marginBottom: 10 }}
             >
               {slime.name} ✏️
             </div>
           )}
 
-          <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 8, color: 'var(--text-muted)', marginBottom: 5 }}>おなか</div>
-          <div style={{ display: 'flex', gap: 2, marginBottom: 4 }}>
+          <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}>おなか</div>
+          <div style={{ display: 'flex', gap: 2, marginBottom: 5 }}>
             {Array.from({ length: segs }).map((_, i) => (
               <div key={i} style={{
-                width: 10, height: 7,
+                width: 13, height: 10,
                 background: i < filled ? barColor : 'rgba(255,255,255,0.08)',
                 border: '1px solid rgba(255,255,255,0.06)',
               }} />
             ))}
           </div>
-          <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 8, color: 'var(--text-muted)' }}>{slime.hunger}/100</div>
+          <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 10, color: 'var(--text-muted)' }}>{slime.hunger}/100</div>
 
           {timeMsg && (
-            <div style={{ marginTop: 6, fontFamily: 'var(--pixel-font)', fontSize: 8, color: isCritical ? 'var(--red)' : 'var(--text-muted)', maxWidth: 200 }}>
+            <div style={{ marginTop: 8, fontFamily: 'var(--pixel-font)', fontSize: 9, color: isCritical ? 'var(--red)' : 'var(--text-muted)', maxWidth: 220 }}>
               ⏱ {timeMsg}
             </div>
           )}
@@ -579,10 +579,10 @@ export function SlimeRoom({
         {/* 右: コイン */}
         <div style={{
           background: 'rgba(0,0,0,0.55)', border: '2px solid rgba(255,255,255,0.1)',
-          padding: '10px 14px', backdropFilter: 'blur(2px)',
+          padding: '12px 16px', backdropFilter: 'blur(2px)',
         }}>
-          <span style={{ fontFamily: 'var(--pixel-font)', fontSize: 10, color: 'var(--text-muted)' }}>COIN</span>
-          <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 14, color: 'var(--accent)', marginTop: 4 }}>{slime.coins}</div>
+          <span style={{ fontFamily: 'var(--pixel-font)', fontSize: 12, color: 'var(--text-muted)' }}>COIN</span>
+          <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 18, color: 'var(--accent)', marginTop: 6 }}>{slime.coins}</div>
         </div>
       </div>
 
