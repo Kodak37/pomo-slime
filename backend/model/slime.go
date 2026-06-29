@@ -1,6 +1,7 @@
 package model
 
 import (
+	"errors"
 	"pomodoro-slime/db"
 	"time"
 )
@@ -51,6 +52,15 @@ func UpdateName(userID, name string) (*Slime, error) {
 }
 
 func AddPomodoroCoins(userID string, pomodoroCount, durationMin int) (*Slime, error) {
+	var lastCompleted time.Time
+	db.DB.QueryRow(`
+		SELECT completed_at FROM pomodoro_logs
+		WHERE user_id = $1 ORDER BY completed_at DESC LIMIT 1
+	`, userID).Scan(&lastCompleted)
+	if !lastCompleted.IsZero() && time.Since(lastCompleted) < 15*time.Minute {
+		return nil, errors.New("rate limit")
+	}
+
 	base := 10 + (pomodoroCount / 3)
 	if base > 30 {
 		base = 30

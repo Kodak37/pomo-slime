@@ -13,7 +13,7 @@ func GetFurniture(w http.ResponseWriter, r *http.Request) {
 	uid := GetUserID(r)
 	list, err := model.GetFurniture(uid)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 	json.NewEncoder(w).Encode(list)
@@ -24,7 +24,7 @@ func BuyFurniture(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
 	list, err := model.BuyFurniture(uid, id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 	json.NewEncoder(w).Encode(list)
@@ -35,7 +35,7 @@ func ToggleFurniture(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
 	list, err := model.ToggleFurniture(uid, id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 	json.NewEncoder(w).Encode(list)
@@ -55,7 +55,7 @@ func UpdateFurnitureLayout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := model.UpdateFurnitureLayout(uid, id, body.X, body.Y, body.W, body.H); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 	w.Write([]byte(`{"ok":true}`))

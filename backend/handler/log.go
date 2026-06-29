@@ -10,7 +10,7 @@ func GetLogs(w http.ResponseWriter, r *http.Request) {
 	uid := GetUserID(r)
 	logs, err := model.GetLogs(uid, 50)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 	json.NewEncoder(w).Encode(logs)

@@ -13,7 +13,7 @@ func GetOutfits(w http.ResponseWriter, r *http.Request) {
 	uid := GetUserID(r)
 	list, err := model.GetOutfits(uid)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 	json.NewEncoder(w).Encode(list)
@@ -24,7 +24,7 @@ func BuyOutfit(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
 	list, err := model.BuyOutfit(uid, id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 	json.NewEncoder(w).Encode(list)
@@ -35,7 +35,7 @@ func EquipOutfit(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
 	list, err := model.EquipOutfit(uid, id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 	json.NewEncoder(w).Encode(list)

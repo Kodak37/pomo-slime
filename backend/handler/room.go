@@ -10,7 +10,7 @@ func GetRoom(w http.ResponseWriter, r *http.Request) {
 	uid := GetUserID(r)
 	room, err := model.GetRoomSettings(uid)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 	json.NewEncoder(w).Encode(room)
@@ -27,7 +27,7 @@ func UpdateRoom(w http.ResponseWriter, r *http.Request) {
 	}
 	room, err := model.UpdateRoomTheme(uid, body.Theme)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 	json.NewEncoder(w).Encode(room)
