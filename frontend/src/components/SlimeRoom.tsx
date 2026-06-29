@@ -699,7 +699,7 @@ export function SlimeRoom({
 
       {activePanel === 'outfit' && (
         <PanelModal title="👗 きせかえ" onClose={() => setActivePanel(null)}>
-          <Customization coins={slime.coins} onUpdate={() => { onUpdate?.(); setActivePanel(null) }} />
+          <Customization coins={slime.coins} onUpdate={() => { onUpdate?.() }} />
         </PanelModal>
       )}
 
@@ -718,7 +718,7 @@ export function SlimeRoom({
       {/* ────── HUD: 下部 ────── */}
       <div style={{
         position: 'absolute', bottom: 0, left: 0, right: 0,
-        zIndex: 10,
+        zIndex: 25,
         background: 'rgba(0,0,0,0.6)',
         borderTop: '2px solid rgba(255,255,255,0.08)',
         backdropFilter: 'blur(4px)',
