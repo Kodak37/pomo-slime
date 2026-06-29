@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { apiFetch } from '../lib/api'
 
 interface Furniture {
   id: number
@@ -18,17 +19,17 @@ interface Props {
 export function Shop({ coins, onUpdate }: Props) {
   const [items, setItems] = useState<Furniture[]>([])
 
-  const load = () => fetch('/api/furniture').then(r => r.json()).then(setItems)
+  const load = () => apiFetch('/api/furniture').then(r => r.json()).then(setItems)
   useEffect(() => { load() }, [])
 
   async function buy(id: number) {
-    const res = await fetch(`/api/furniture/${id}/buy`, { method: 'POST' })
+    const res = await apiFetch(`/api/furniture/${id}/buy`, { method: 'POST' })
     setItems(await res.json())
     onUpdate()
   }
 
   async function toggle(id: number) {
-    const res = await fetch(`/api/furniture/${id}/toggle`, { method: 'POST' })
+    const res = await apiFetch(`/api/furniture/${id}/toggle`, { method: 'POST' })
     setItems(await res.json())
     onUpdate()
   }

@@ -12,8 +12,13 @@ type PomodoroLog struct {
 	CompletedAt time.Time `json:"completedAt"`
 }
 
-func GetLogs(limit int) ([]PomodoroLog, error) {
-	rows, err := db.DB.Query(`SELECT id, duration_min, coins_earned, completed_at FROM pomodoro_logs ORDER BY completed_at DESC LIMIT ?`, limit)
+func GetLogs(userID string, limit int) ([]PomodoroLog, error) {
+	rows, err := db.DB.Query(`
+		SELECT id, duration_min, coins_earned, completed_at
+		FROM pomodoro_logs
+		WHERE user_id = $1
+		ORDER BY completed_at DESC LIMIT $2
+	`, userID, limit)
 	if err != nil {
 		return nil, err
 	}

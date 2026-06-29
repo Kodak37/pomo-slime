@@ -7,7 +7,8 @@ import (
 )
 
 func GetRoom(w http.ResponseWriter, r *http.Request) {
-	room, err := model.GetRoomSettings()
+	uid := GetUserID(r)
+	room, err := model.GetRoomSettings(uid)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -16,6 +17,7 @@ func GetRoom(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdateRoom(w http.ResponseWriter, r *http.Request) {
+	uid := GetUserID(r)
 	var body struct {
 		Theme string `json:"theme"`
 	}
@@ -23,7 +25,7 @@ func UpdateRoom(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid theme", http.StatusBadRequest)
 		return
 	}
-	room, err := model.UpdateRoomTheme(body.Theme)
+	room, err := model.UpdateRoomTheme(uid, body.Theme)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

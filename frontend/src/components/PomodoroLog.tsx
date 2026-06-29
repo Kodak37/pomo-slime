@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { apiFetch } from '../lib/api'
 
 interface Log {
   id: number
@@ -24,7 +25,7 @@ export function PomodoroLog() {
   const [logs, setLogs] = useState<Log[]>([])
 
   useEffect(() => {
-    fetch('/api/logs').then(r => r.json()).then(setLogs)
+    apiFetch('/api/logs').then(r => r.json()).then(setLogs)
   }, [])
 
   const totalCoins = logs.reduce((s, l) => s + l.coinsEarned, 0)

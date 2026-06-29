@@ -17,8 +17,19 @@ type Furniture struct {
 	FloorOnly      bool    `json:"floorOnly"`
 }
 
-func GetFurniture() ([]Furniture, error) {
-	rows, err := db.DB.Query(`SELECT id, name, emoji, cost, happiness_bonus, owned, equipped, x, y, w, h, floor_only FROM furniture ORDER BY id`)
+func GetFurniture(userID string) ([]Furniture, error) {
+	rows, err := db.DB.Query(`
+		SELECT fc.id, fc.name, fc.emoji, fc.cost, fc.happiness_bonus, fc.floor_only,
+		       (uf.user_id IS NOT NULL) AS owned,
+		       COALESCE(uf.equipped, FALSE) AS equipped,
+		       COALESCE(uf.x, fc.default_x) AS x,
+		       COALESCE(uf.y, fc.default_y) AS y,
+		       COALESCE(uf.w, fc.default_w) AS w,
+		       COALESCE(uf.h, fc.default_h) AS h
+		FROM furniture_catalog fc
+		LEFT JOIN user_furniture uf ON uf.furniture_id = fc.id AND uf.user_id = $1
+		ORDER BY fc.id
+	`, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -26,13 +37,9 @@ func GetFurniture() ([]Furniture, error) {
 	var list []Furniture
 	for rows.Next() {
 		var f Furniture
-		var owned, equipped, floorOnly int
-		if err := rows.Scan(&f.ID, &f.Name, &f.Emoji, &f.Cost, &f.HappinessBonus, &owned, &equipped, &f.X, &f.Y, &f.W, &f.H, &floorOnly); err != nil {
+		if err := rows.Scan(&f.ID, &f.Name, &f.Emoji, &f.Cost, &f.HappinessBonus, &f.FloorOnly, &f.Owned, &f.Equipped, &f.X, &f.Y, &f.W, &f.H); err != nil {
 			return nil, err
 		}
-		f.Owned = owned == 1
-		f.Equipped = equipped == 1
-		f.FloorOnly = floorOnly == 1
 		list = append(list, f)
 	}
 	if list == nil {
@@ -41,34 +48,48 @@ func GetFurniture() ([]Furniture, error) {
 	return list, nil
 }
 
-func BuyFurniture(id int) ([]Furniture, error) {
-	s, err := GetSlime()
+func BuyFurniture(userID string, id int) ([]Furniture, error) {
+	s, err := GetSlime(userID)
 	if err != nil {
 		return nil, err
 	}
-	var cost, owned int
-	db.DB.QueryRow(`SELECT cost, owned FROM furniture WHERE id = ?`, id).Scan(&cost, &owned)
-	if owned == 1 || s.Coins < cost {
-		return GetFurniture()
+	var cost int
+	db.DB.QueryRow(`SELECT cost FROM furniture_catalog WHERE id = $1`, id).Scan(&cost)
+	if s.Coins < cost {
+		return GetFurniture(userID)
 	}
-	db.DB.Exec(`UPDATE slime SET coins = coins - ? WHERE id = 1`, cost)
-	db.DB.Exec(`UPDATE furniture SET owned = 1 WHERE id = ?`, id)
-	return GetFurniture()
+	var owned bool
+	db.DB.QueryRow(`SELECT EXISTS(SELECT 1 FROM user_furniture WHERE user_id = $1 AND furniture_id = $2)`, userID, id).Scan(&owned)
+	if owned {
+		return GetFurniture(userID)
+	}
+	db.DB.Exec(`UPDATE slimes SET coins = coins - $1 WHERE user_id = $2`, cost, userID)
+	// デフォルト位置をカタログから引き継ぐ
+	db.DB.Exec(`
+		INSERT INTO user_furniture (user_id, furniture_id, x, y, w, h)
+		SELECT $1, id, default_x, default_y, default_w, default_h
+		FROM furniture_catalog WHERE id = $2
+		ON CONFLICT DO NOTHING
+	`, userID, id)
+	return GetFurniture(userID)
 }
 
-func ToggleFurniture(id int) ([]Furniture, error) {
-	var equipped int
-	db.DB.QueryRow(`SELECT equipped FROM furniture WHERE id = ?`, id).Scan(&equipped)
-	if equipped == 1 {
-		db.DB.Exec(`UPDATE furniture SET equipped = 0 WHERE id = ?`, id)
+func ToggleFurniture(userID string, id int) ([]Furniture, error) {
+	var equipped bool
+	db.DB.QueryRow(`SELECT equipped FROM user_furniture WHERE user_id = $1 AND furniture_id = $2`, userID, id).Scan(&equipped)
+	if equipped {
+		db.DB.Exec(`UPDATE user_furniture SET equipped = FALSE WHERE user_id = $1 AND furniture_id = $2`, userID, id)
 	} else {
-		db.DB.Exec(`UPDATE furniture SET equipped = 1 WHERE id = ? AND owned = 1`, id)
+		db.DB.Exec(`UPDATE user_furniture SET equipped = TRUE WHERE user_id = $1 AND furniture_id = $2`, userID, id)
 	}
-	UpdateHappinessBonus()
-	return GetFurniture()
+	UpdateHappinessBonus(userID)
+	return GetFurniture(userID)
 }
 
-func UpdateFurnitureLayout(id int, x, y, w, h float64) error {
-	_, err := db.DB.Exec(`UPDATE furniture SET x=?, y=?, w=?, h=? WHERE id=?`, x, y, w, h, id)
+func UpdateFurnitureLayout(userID string, id int, x, y, w, h float64) error {
+	_, err := db.DB.Exec(`
+		UPDATE user_furniture SET x=$1, y=$2, w=$3, h=$4
+		WHERE user_id = $5 AND furniture_id = $6
+	`, x, y, w, h, userID, id)
 	return err
 }

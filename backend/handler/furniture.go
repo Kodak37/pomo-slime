@@ -10,7 +10,8 @@ import (
 )
 
 func GetFurniture(w http.ResponseWriter, r *http.Request) {
-	list, err := model.GetFurniture()
+	uid := GetUserID(r)
+	list, err := model.GetFurniture(uid)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -19,8 +20,9 @@ func GetFurniture(w http.ResponseWriter, r *http.Request) {
 }
 
 func BuyFurniture(w http.ResponseWriter, r *http.Request) {
+	uid := GetUserID(r)
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
-	list, err := model.BuyFurniture(id)
+	list, err := model.BuyFurniture(uid, id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -29,8 +31,9 @@ func BuyFurniture(w http.ResponseWriter, r *http.Request) {
 }
 
 func ToggleFurniture(w http.ResponseWriter, r *http.Request) {
+	uid := GetUserID(r)
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
-	list, err := model.ToggleFurniture(id)
+	list, err := model.ToggleFurniture(uid, id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -39,6 +42,7 @@ func ToggleFurniture(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdateFurnitureLayout(w http.ResponseWriter, r *http.Request) {
+	uid := GetUserID(r)
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
 	var body struct {
 		X float64 `json:"x"`
@@ -50,7 +54,7 @@ func UpdateFurnitureLayout(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if err := model.UpdateFurnitureLayout(id, body.X, body.Y, body.W, body.H); err != nil {
+	if err := model.UpdateFurnitureLayout(uid, id, body.X, body.Y, body.W, body.H); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

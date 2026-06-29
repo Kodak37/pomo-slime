@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { Customization } from './Customization'
 import { Shop } from './Shop'
 import { RoomSettings } from './RoomSettings'
+import { apiFetch } from '../lib/api'
 
 type SlimeStatus = 'happy' | 'slightly_happy' | 'normal' | 'hungry' | 'dying'
 type ActivePanel = 'feed' | 'outfit' | 'furniture' | 'room' | null
@@ -330,7 +331,7 @@ export function SlimeRoom({
   const [selectedFurnitureId, setSelectedFurnitureId] = useState<number | null>(null)
 
   const fetchFurniture = useCallback(() => {
-    fetch('/api/furniture')
+    apiFetch('/api/furniture')
       .then(r => r.json())
       .then((items: Array<{ id: number; name: string; emoji: string; owned: boolean; equipped: boolean; x: number; y: number; w: number; h: number; floorOnly: boolean }>) => {
         setPlacedItems(items.filter(f => f.owned && f.equipped).map(f => ({
@@ -420,7 +421,7 @@ export function SlimeRoom({
   }
 
   function saveLayout(id: number, pos: { x: number; y: number; w: number; h: number }) {
-    fetch(`/api/furniture/${id}/layout`, {
+    apiFetch(`/api/furniture/${id}/layout`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(pos),
@@ -457,7 +458,7 @@ export function SlimeRoom({
 
   async function saveName() {
     if (!nameInput.trim()) return
-    await fetch('/api/slime/name', {
+    await apiFetch('/api/slime/name', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: nameInput.trim() }),

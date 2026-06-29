@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -32,34 +33,42 @@ func main() {
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins: []string{"*"},
 		AllowedMethods: []string{"GET", "POST", "PUT"},
-		AllowedHeaders: []string{"Content-Type"},
+		AllowedHeaders: []string{"Content-Type", "Authorization"},
 	}))
 
-	// slime
-	r.Get("/api/slime", handler.GetSlime)
-	r.Put("/api/slime/name", handler.UpdateName)
-	r.Post("/api/pomodoro/done", handler.PomodoroComplete)
-	r.Post("/api/feed", handler.Feed)
+	// フロントエンドに渡すSupabase設定（認証不要）
+	r.Get("/api/config", func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(map[string]string{
+			"supabaseUrl": os.Getenv("SUPABASE_URL"),
+			"supabaseKey": os.Getenv("SUPABASE_ANON_KEY"),
+		})
+	})
 
-	// logs
-	r.Get("/api/logs", handler.GetLogs)
+	// 認証が必要なAPIルート
+	r.Group(func(r chi.Router) {
+		r.Use(handler.AuthMiddleware)
 
-	// outfits
-	r.Get("/api/outfits", handler.GetOutfits)
-	r.Post("/api/outfits/{id}/buy", handler.BuyOutfit)
-	r.Post("/api/outfits/{id}/equip", handler.EquipOutfit)
+		r.Get("/api/slime", handler.GetSlime)
+		r.Put("/api/slime/name", handler.UpdateName)
+		r.Post("/api/pomodoro/done", handler.PomodoroComplete)
+		r.Post("/api/feed", handler.Feed)
 
-	// furniture
-	r.Get("/api/furniture", handler.GetFurniture)
-	r.Post("/api/furniture/{id}/buy", handler.BuyFurniture)
-	r.Post("/api/furniture/{id}/toggle", handler.ToggleFurniture)
-	r.Put("/api/furniture/{id}/layout", handler.UpdateFurnitureLayout)
+		r.Get("/api/logs", handler.GetLogs)
 
-	// room
-	r.Get("/api/room", handler.GetRoom)
-	r.Put("/api/room", handler.UpdateRoom)
+		r.Get("/api/outfits", handler.GetOutfits)
+		r.Post("/api/outfits/{id}/buy", handler.BuyOutfit)
+		r.Post("/api/outfits/{id}/equip", handler.EquipOutfit)
 
-	// フロントエンド静的ファイル配信（本番環境）
+		r.Get("/api/furniture", handler.GetFurniture)
+		r.Post("/api/furniture/{id}/buy", handler.BuyFurniture)
+		r.Post("/api/furniture/{id}/toggle", handler.ToggleFurniture)
+		r.Put("/api/furniture/{id}/layout", handler.UpdateFurnitureLayout)
+
+		r.Get("/api/room", handler.GetRoom)
+		r.Put("/api/room", handler.UpdateRoom)
+	})
+
+	// フロントエンド静的ファイル配信
 	frontendDist := "./frontend/dist"
 	if _, err := os.Stat(frontendDist); err == nil {
 		fileServer := http.FileServer(http.Dir(frontendDist))
