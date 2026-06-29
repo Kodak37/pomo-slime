@@ -30,6 +30,7 @@ interface Props {
 // ────────────── 定数 ──────────────
 const WALL_RATIO  = 0.65
 const FLOOR_RATIO = 0.35
+const FLOOR_MAX_Y = 88  // 床エリアの下限（%）。ボトムバー分を除く
 
 const SPEED: Record<SlimeStatus, number> = {
   dying: 0.04, hungry: 0.14, normal: 0.28, slightly_happy: 0.48, happy: 0.82,
@@ -234,7 +235,10 @@ export function SlimeRoom({
   const barColor = slime.hunger >= 60 ? 'var(--green)' : slime.hunger >= 30 ? 'var(--accent)' : 'var(--red)'
 
   const pickTarget = useCallback(() => {
-    setTarget({ x: 8 + Math.random() * 78, y: floorY })
+    setTarget({
+      x: 8 + Math.random() * 78,
+      y: floorY + Math.random() * (FLOOR_MAX_Y - floorY),
+    })
   }, [floorY])
 
   useEffect(() => {
@@ -246,7 +250,8 @@ export function SlimeRoom({
       if (isDraggingRef.current) return
       const cur  = posRef.current
       const dx   = target.x - cur.x
-      const dist = Math.abs(dx)
+      const dy   = target.y - cur.y
+      const dist = Math.sqrt(dx * dx + dy * dy)
 
       if (dist < 1.5) {
         if (!idleScheduled.current) {
@@ -263,8 +268,9 @@ export function SlimeRoom({
 
       setFacingLeft(dx < 0)
       const newX = cur.x + (dx / dist) * speed
-      posRef.current = { x: newX, y: floorY }
-      setPos({ x: newX, y: floorY })
+      const newY = cur.y + (dy / dist) * speed
+      posRef.current = { x: newX, y: newY }
+      setPos({ x: newX, y: newY })
     }, TICK)
 
     return () => {
@@ -303,8 +309,9 @@ export function SlimeRoom({
   function handleSlimePointerUp() {
     isDraggingRef.current = false
     setIsDragging(false)
-    posRef.current = { ...posRef.current, y: floorY }
-    setPos(p => ({ ...p, y: floorY }))
+    const clampedY = Math.max(floorY, Math.min(FLOOR_MAX_Y, posRef.current.y))
+    posRef.current = { ...posRef.current, y: clampedY }
+    setPos(p => ({ ...p, y: clampedY }))
     pickTarget()
   }
 
