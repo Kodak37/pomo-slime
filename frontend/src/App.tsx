@@ -177,6 +177,8 @@ export default function App() {
             onNameUpdate={name => setSlime(s => s ? { ...s, name } : s)}
             onFeed={handleFeed}
             onGameOpen={() => setShowGame(true)}
+            onThemeChange={setTheme}
+            onUpdate={() => { fetchSlime(); fetchOutfit() }}
           />
         </div>
       )}

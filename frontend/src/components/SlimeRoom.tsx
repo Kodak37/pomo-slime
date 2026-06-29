@@ -1,6 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { Customization } from './Customization'
+import { Shop } from './Shop'
+import { RoomSettings } from './RoomSettings'
 
 type SlimeStatus = 'happy' | 'slightly_happy' | 'normal' | 'hungry' | 'dying'
+type ActivePanel = 'feed' | 'outfit' | 'furniture' | 'room' | null
 
 interface SlimeData {
   name: string
@@ -19,11 +23,13 @@ interface Props {
   onNameUpdate: (name: string) => void
   onFeed: (cost: number) => void
   onGameOpen?: () => void
+  onThemeChange?: (theme: string) => void
+  onUpdate?: () => void
 }
 
 // ────────────── 定数 ──────────────
-const WALL_RATIO  = 0.65  // 上 65% が壁
-const FLOOR_RATIO = 0.35  // 下 35% が床
+const WALL_RATIO  = 0.65
+const FLOOR_RATIO = 0.35
 
 const SPEED: Record<SlimeStatus, number> = {
   dying: 0.04, hungry: 0.14, normal: 0.28, slightly_happy: 0.48, happy: 0.82,
@@ -114,7 +120,6 @@ function RoomDecorations({ themeId }: { themeId: string }) {
         imageRendering: 'pixelated',
       }}>
         {[0,1,2,3].map(i => <div key={i} style={{ ...windowPaneStyle, border: '1px solid rgba(255,255,255,0.1)' }} />)}
-        {/* 窓枠の十字 */}
         <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: 3, background: 'rgba(255,255,255,0.18)', transform: 'translateX(-50%)' }} />
         <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 3, background: 'rgba(255,255,255,0.18)', transform: 'translateY(-50%)' }} />
       </div>
@@ -127,7 +132,6 @@ function RoomDecorations({ themeId }: { themeId: string }) {
         border: '2px solid rgba(255,255,255,0.1)',
         borderBottom: '3px solid rgba(0,0,0,0.3)',
       }}>
-        {/* 棚の上の小物 */}
         <div style={{ position: 'absolute', bottom: 8, left: 4, fontSize: 14, lineHeight: 1 }}>📚</div>
         <div style={{ position: 'absolute', bottom: 8, left: 36, fontSize: 12, lineHeight: 1 }}>🕯️</div>
       </div>
@@ -167,15 +171,48 @@ function RoomDecorations({ themeId }: { themeId: string }) {
   )
 }
 
-// ────────────── メインコンポーネント ──────────────
-export function SlimeRoom({ slime, bodyColor = '#4ade80', hatType = 'none', themeId = 'warm', onNameUpdate, onFeed, onGameOpen }: Props) {
-  const roomRef        = useRef<HTMLDivElement>(null)
-  const [editing, setEditing]     = useState(false)
-  const [nameInput, setNameInput] = useState(slime.name)
-  const [showFeed, setShowFeed]   = useState(false)
+// ────────────── パネルモーダル ──────────────
+function PanelModal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+  return (
+    <div
+      style={{
+        position: 'absolute', inset: 0, zIndex: 20,
+        background: 'rgba(0,0,0,0.72)',
+        backdropFilter: 'blur(3px)',
+        display: 'flex', flexDirection: 'column',
+      }}
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <div style={{
+        margin: '16px 12px 0',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        flexShrink: 0,
+      }}>
+        <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 11, color: 'var(--text-dim)' }}>{title}</div>
+        <button
+          onClick={onClose}
+          className="pixel-btn"
+          style={{ padding: '4px 12px', fontSize: 10 }}
+        >✕ とじる</button>
+      </div>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '12px 12px 80px' }}>
+        {children}
+      </div>
+    </div>
+  )
+}
 
-  // スライムの位置 — x のみ変動、y は床ラインに固定
-  const floorY = WALL_RATIO * 100 + 5    // 65+5 = 70%（GIFの透明余白を考慮）
+// ────────────── メインコンポーネント ──────────────
+export function SlimeRoom({
+  slime, bodyColor = '#4ade80', hatType = 'none', themeId = 'warm',
+  onNameUpdate, onFeed, onGameOpen, onThemeChange, onUpdate,
+}: Props) {
+  const roomRef        = useRef<HTMLDivElement>(null)
+  const [editing, setEditing]       = useState(false)
+  const [nameInput, setNameInput]   = useState(slime.name)
+  const [activePanel, setActivePanel] = useState<ActivePanel>(null)
+
+  const floorY = WALL_RATIO * 100 + 5
   const [pos, setPos]         = useState({ x: 45, y: floorY })
   const posRef                = useRef({ x: 45, y: floorY })
   const [target, setTarget]   = useState({ x: 65, y: floorY })
@@ -194,12 +231,10 @@ export function SlimeRoom({ slime, bodyColor = '#4ade80', hatType = 'none', them
   const filled = Math.round((slime.hunger / 100) * segs)
   const barColor = slime.hunger >= 60 ? 'var(--green)' : slime.hunger >= 30 ? 'var(--accent)' : 'var(--red)'
 
-  // 新しい目標地点を選ぶ（床ライン上、x のみランダム）
   const pickTarget = useCallback(() => {
     setTarget({ x: 8 + Math.random() * 78, y: floorY })
   }, [floorY])
 
-  // 徘徊ループ — posRef で副作用を setPos の外に出す
   useEffect(() => {
     idleScheduled.current = false
     if (idleTimer.current) { clearTimeout(idleTimer.current); idleTimer.current = null }
@@ -236,7 +271,6 @@ export function SlimeRoom({ slime, bodyColor = '#4ade80', hatType = 'none', them
     }
   }, [target, speed, pickTarget, floorY])
 
-  // 表示するGIF（停止中はidle固定）
   const activeGif = isIdle
     ? '/slime/idle.gif'
     : (slime.status === 'dying' || slime.status === 'hungry') ? '/slime/idle.gif'
@@ -255,6 +289,23 @@ export function SlimeRoom({ slime, bodyColor = '#4ade80', hatType = 'none', them
     setEditing(false)
   }
 
+  function togglePanel(panel: ActivePanel) {
+    setActivePanel(v => v === panel ? null : panel)
+  }
+
+  const btnBase: React.CSSProperties = {
+    padding: '6px 12px', fontSize: 9,
+    background: 'rgba(0,0,0,0.4)',
+    borderColor: 'var(--border-lit)',
+    color: 'var(--text)',
+  }
+  const btnActive: React.CSSProperties = {
+    ...btnBase,
+    background: 'rgba(245,158,11,0.15)',
+    borderColor: 'var(--accent)',
+    color: 'var(--accent)',
+  }
+
   return (
     <div
       ref={roomRef}
@@ -266,7 +317,6 @@ export function SlimeRoom({ slime, bodyColor = '#4ade80', hatType = 'none', them
         userSelect: 'none',
       }}
     >
-      {/* 部屋デコレーション */}
       <RoomDecorations themeId={themeId} />
 
       {/* ────── HUD: 上部 ────── */}
@@ -308,7 +358,6 @@ export function SlimeRoom({ slime, bodyColor = '#4ade80', hatType = 'none', them
             </div>
           )}
 
-          {/* 空腹バー */}
           <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 8, color: 'var(--text-muted)', marginBottom: 5 }}>おなか</div>
           <div style={{ display: 'flex', gap: 2, marginBottom: 4 }}>
             {Array.from({ length: segs }).map((_, i) => (
@@ -321,7 +370,6 @@ export function SlimeRoom({ slime, bodyColor = '#4ade80', hatType = 'none', them
           </div>
           <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 8, color: 'var(--text-muted)' }}>{slime.hunger}/100</div>
 
-          {/* 時間警告 */}
           {timeMsg && (
             <div style={{ marginTop: 6, fontFamily: 'var(--pixel-font)', fontSize: 8, color: isCritical ? 'var(--red)' : 'var(--text-muted)', maxWidth: 200 }}>
               ⏱ {timeMsg}
@@ -348,7 +396,6 @@ export function SlimeRoom({ slime, bodyColor = '#4ade80', hatType = 'none', them
         zIndex: 5,
         transition: 'left 0.06s linear, top 0.06s linear',
       }}>
-        {/* ステータスバブル */}
         <div style={{
           fontFamily: 'var(--pixel-font)', fontSize: 8, color: cfg.color,
           textAlign: 'center', marginBottom: 2,
@@ -375,7 +422,6 @@ export function SlimeRoom({ slime, bodyColor = '#4ade80', hatType = 'none', them
           }}
         />
 
-        {/* 影 */}
         <div style={{
           width: 60, height: 8, marginTop: -4,
           background: 'rgba(0,0,0,0.25)',
@@ -385,7 +431,57 @@ export function SlimeRoom({ slime, bodyColor = '#4ade80', hatType = 'none', them
         }} />
       </div>
 
-      {/* ────── HUD: 下部（ごはん + ボタン） ────── */}
+      {/* ────── オーバーレイパネル ────── */}
+      {activePanel === 'feed' && (
+        <PanelModal title="🍽 ごはんをあげる" onClose={() => setActivePanel(null)}>
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap', paddingTop: 8 }}>
+            {FOODS.map(food => {
+              const ok = slime.coins >= food.cost
+              return (
+                <button
+                  key={food.name}
+                  onClick={() => { onFeed(food.cost); setActivePanel(null) }}
+                  disabled={!ok}
+                  className="pixel-btn"
+                  style={{
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                    padding: '12px 20px',
+                    background: ok ? 'rgba(30,14,4,0.9)' : 'rgba(18,8,3,0.9)',
+                    color: ok ? 'var(--text)' : 'var(--text-muted)',
+                    borderColor: ok ? 'var(--border-lit)' : 'var(--border)',
+                    minWidth: 90,
+                  }}
+                >
+                  <span style={{ fontSize: 28 }}>{food.emoji}</span>
+                  <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 9 }}>{food.name}</div>
+                  <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 8, color: 'var(--text-muted)' }}>満腹{food.desc}</div>
+                  <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 9, color: ok ? 'var(--accent)' : 'var(--text-muted)' }}>🪙{food.cost}</div>
+                </button>
+              )
+            })}
+          </div>
+        </PanelModal>
+      )}
+
+      {activePanel === 'outfit' && (
+        <PanelModal title="👗 きせかえ" onClose={() => setActivePanel(null)}>
+          <Customization coins={slime.coins} onUpdate={() => { onUpdate?.(); setActivePanel(null) }} />
+        </PanelModal>
+      )}
+
+      {activePanel === 'furniture' && (
+        <PanelModal title="🪑 かぐショップ" onClose={() => setActivePanel(null)}>
+          <Shop coins={slime.coins} onUpdate={onUpdate ?? (() => {})} />
+        </PanelModal>
+      )}
+
+      {activePanel === 'room' && onThemeChange && (
+        <PanelModal title="🏠 へやのテーマ" onClose={() => setActivePanel(null)}>
+          <RoomSettings currentTheme={themeId} onThemeChange={t => { onThemeChange(t); }} />
+        </PanelModal>
+      )}
+
+      {/* ────── HUD: 下部 ────── */}
       <div style={{
         position: 'absolute', bottom: 0, left: 0, right: 0,
         zIndex: 10,
@@ -394,64 +490,49 @@ export function SlimeRoom({ slime, bodyColor = '#4ade80', hatType = 'none', them
         backdropFilter: 'blur(4px)',
         padding: '10px 16px',
       }}>
-        {/* ごはんパネル（展開時） */}
-        {showFeed && (
-          <div style={{
-            display: 'flex', gap: 10, marginBottom: 10, justifyContent: 'center',
-          }}>
-            {FOODS.map(food => {
-              const ok = slime.coins >= food.cost
-              return (
-                <button
-                  key={food.name}
-                  onClick={() => { onFeed(food.cost); setShowFeed(false) }}
-                  disabled={!ok}
-                  className="pixel-btn"
-                  style={{
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-                    padding: '8px 14px',
-                    background: ok ? 'rgba(30,14,4,0.9)' : 'rgba(18,8,3,0.9)',
-                    color: ok ? 'var(--text)' : 'var(--text-muted)',
-                    borderColor: ok ? 'var(--border-lit)' : 'var(--border)',
-                    minWidth: 72,
-                  }}
-                >
-                  <span style={{ fontSize: 22 }}>{food.emoji}</span>
-                  <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 9 }}>{food.name}</div>
-                  <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 8, color: 'var(--text-muted)' }}>満腹{food.desc}</div>
-                  <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 9, color: ok ? 'var(--accent)' : 'var(--text-muted)' }}>🪙{food.cost}</div>
-                </button>
-              )
-            })}
-          </div>
-        )}
-
-        {/* ボタン行 */}
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
           <button
-            onClick={() => setShowFeed(v => !v)}
+            onClick={() => togglePanel('feed')}
             className="pixel-btn"
-            style={{
-              padding: '8px 20px', fontSize: 10,
-              background: showFeed ? 'rgba(245,158,11,0.15)' : 'rgba(0,0,0,0.4)',
-              borderColor: showFeed ? 'var(--accent)' : 'var(--border-lit)',
-              color: showFeed ? 'var(--accent)' : 'var(--text)',
-            }}
+            style={activePanel === 'feed' ? btnActive : { ...btnBase, padding: '6px 14px', fontSize: 10 }}
           >
-            🍽 ごはんをあげる
+            🍽 ごはん
           </button>
+          <button
+            onClick={() => togglePanel('outfit')}
+            className="pixel-btn"
+            style={activePanel === 'outfit' ? btnActive : btnBase}
+          >
+            👗 きせかえ
+          </button>
+          <button
+            onClick={() => togglePanel('furniture')}
+            className="pixel-btn"
+            style={activePanel === 'furniture' ? btnActive : btnBase}
+          >
+            🪑 かぐ
+          </button>
+          {onThemeChange && (
+            <button
+              onClick={() => togglePanel('room')}
+              className="pixel-btn"
+              style={activePanel === 'room' ? btnActive : btnBase}
+            >
+              🏠 へや
+            </button>
+          )}
           {onGameOpen && (
             <button
               onClick={onGameOpen}
               className="pixel-btn"
               style={{
-                padding: '8px 20px', fontSize: 10,
+                ...btnBase,
                 background: 'rgba(124,58,237,0.15)',
                 borderColor: '#7c3aed',
                 color: '#c084fc',
               }}
             >
-              🎮 遊ぶ
+              🎮 あそぶ
             </button>
           )}
         </div>
