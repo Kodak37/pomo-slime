@@ -53,6 +53,7 @@ func main() {
 	r.Get("/api/furniture", handler.GetFurniture)
 	r.Post("/api/furniture/{id}/buy", handler.BuyFurniture)
 	r.Post("/api/furniture/{id}/toggle", handler.ToggleFurniture)
+	r.Put("/api/furniture/{id}/layout", handler.UpdateFurnitureLayout)
 
 	// room
 	r.Get("/api/room", handler.GetRoom)

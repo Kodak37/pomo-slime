@@ -6,6 +6,17 @@ import { RoomSettings } from './RoomSettings'
 type SlimeStatus = 'happy' | 'slightly_happy' | 'normal' | 'hungry' | 'dying'
 type ActivePanel = 'feed' | 'outfit' | 'furniture' | 'room' | null
 
+interface PlacedFurniture {
+  id: number
+  name: string
+  emoji: string
+  x: number   // 左端 % (room width 基準)
+  y: number   // 上端 % (room height 基準)
+  w: number   // 幅 %
+  h: number   // 高さ %
+  floorOnly: boolean
+}
+
 interface SlimeData {
   name: string
   hunger: number
@@ -172,6 +183,135 @@ function RoomDecorations({ themeId }: { themeId: string }) {
   )
 }
 
+// ────────────── 配置済み家具（ドラッグ＆リサイズ） ──────────────
+function PlacedItem({
+  item, roomRef, selected, onSelect, onChange, onSave,
+}: {
+  item: PlacedFurniture
+  roomRef: React.RefObject<HTMLDivElement>
+  selected: boolean
+  onSelect: () => void
+  onChange: (u: Partial<PlacedFurniture>) => void
+  onSave: (pos: { x: number; y: number; w: number; h: number }) => void
+}) {
+  const bodyDrag = useRef<{ smx: number; smy: number; sx: number; sy: number } | null>(null)
+  const resDrag  = useRef<{ smx: number; smy: number; sx: number; sy: number; sw: number; sh: number; dir: string } | null>(null)
+  const latest   = useRef({ x: item.x, y: item.y, w: item.w, h: item.h })
+  latest.current = { x: item.x, y: item.y, w: item.w, h: item.h }
+
+  function pct(e: React.PointerEvent) {
+    const r = roomRef.current!.getBoundingClientRect()
+    return { x: ((e.clientX - r.left) / r.width) * 100, y: ((e.clientY - r.top) / r.height) * 100 }
+  }
+  function clamp(v: number, lo: number, hi: number) { return Math.max(lo, Math.min(hi, v)) }
+
+  function applyFloor(ny: number, nh: number) {
+    if (!item.floorOnly) return ny
+    return Math.max(WALL_RATIO * 100 - nh, ny)
+  }
+
+  // ─── body drag ───
+  function onBodyDown(e: React.PointerEvent) {
+    e.stopPropagation()
+    onSelect()
+    const { x: mx, y: my } = pct(e)
+    bodyDrag.current = { smx: mx, smy: my, sx: item.x, sy: item.y }
+    ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+  }
+  function onBodyMove(e: React.PointerEvent) {
+    if (!bodyDrag.current) return
+    const { x: mx, y: my } = pct(e)
+    let nx = clamp(bodyDrag.current.sx + (mx - bodyDrag.current.smx), 0, 100 - item.w)
+    let ny = clamp(bodyDrag.current.sy + (my - bodyDrag.current.smy), 0, 100 - item.h)
+    ny = applyFloor(ny, item.h)
+    onChange({ x: nx, y: ny })
+  }
+  function onBodyUp() {
+    if (!bodyDrag.current) return
+    bodyDrag.current = null
+    onSave(latest.current)
+  }
+
+  // ─── resize ───
+  function onHandleDown(e: React.PointerEvent, dir: string) {
+    e.stopPropagation()
+    e.preventDefault()
+    const { x: mx, y: my } = pct(e)
+    resDrag.current = { smx: mx, smy: my, sx: item.x, sy: item.y, sw: item.w, sh: item.h, dir }
+    ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+  }
+  function onHandleMove(e: React.PointerEvent) {
+    if (!resDrag.current) return
+    const { x: mx, y: my } = pct(e)
+    const dx = mx - resDrag.current.smx
+    const dy = my - resDrag.current.smy
+    const { sx, sy, sw, sh, dir } = resDrag.current
+    const MIN = 4
+    let nx = sx, ny = sy, nw = sw, nh = sh
+
+    if (dir.includes('e')) nw = Math.max(MIN, sw + dx)
+    if (dir.includes('s')) nh = Math.max(MIN, sh + dy)
+    if (dir.includes('w')) { nw = Math.max(MIN, sw - dx); nx = sx + sw - nw }
+    if (dir.includes('n')) { nh = Math.max(MIN, sh - dy); ny = sy + sh - nh }
+
+    nx = Math.max(0, nx); ny = Math.max(0, ny)
+    nw = Math.min(nw, 100 - nx); nh = Math.min(nh, 100 - ny)
+    ny = applyFloor(ny, nh)
+    onChange({ x: nx, y: ny, w: nw, h: nh })
+  }
+  function onHandleUp() {
+    if (!resDrag.current) return
+    resDrag.current = null
+    onSave(latest.current)
+  }
+
+  const handle: React.CSSProperties = {
+    position: 'absolute', width: 10, height: 10,
+    background: 'var(--accent)', border: '2px solid rgba(0,0,0,0.7)',
+    zIndex: 31, touchAction: 'none',
+  }
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        left: `${item.x}%`, top: `${item.y}%`,
+        width: `${item.w}%`, height: `${item.h}%`,
+        zIndex: selected ? 12 : 8,
+        cursor: 'grab',
+        outline: selected ? '2px dashed rgba(251,191,36,0.8)' : '1px dashed rgba(255,255,255,0.07)',
+        outlineOffset: 2,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        touchAction: 'none', userSelect: 'none',
+      }}
+      onPointerDown={onBodyDown}
+      onPointerMove={onBodyMove}
+      onPointerUp={onBodyUp}
+      onPointerCancel={onBodyUp}
+    >
+      <span style={{ fontSize: `min(${item.w * 0.9}vw, ${item.h * 0.75}vh)`, lineHeight: 1, pointerEvents: 'none' }}>
+        {item.emoji}
+      </span>
+
+      {selected && (['nw','ne','sw','se'] as const).map(dir => (
+        <div
+          key={dir}
+          style={{
+            ...handle,
+            ...(dir.includes('n') ? { top: -5 } : { bottom: -5 }),
+            ...(dir.includes('w') ? { left: -5 } : { right: -5 }),
+            cursor: `${dir}-resize`,
+          }}
+          onPointerDown={e => onHandleDown(e, dir)}
+          onPointerMove={onHandleMove}
+          onPointerUp={onHandleUp}
+          onPointerCancel={onHandleUp}
+        />
+      ))}
+    </div>
+  )
+}
+
 // ────────────── パネルモーダル ──────────────
 function PanelModal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
@@ -214,6 +354,24 @@ export function SlimeRoom({
   const [activePanel, setActivePanel] = useState<ActivePanel>(null)
   const [isDragging, setIsDragging] = useState(false)
   const isDraggingRef               = useRef(false)
+
+  // ── 配置家具 ──
+  const [placedItems, setPlacedItems]   = useState<PlacedFurniture[]>([])
+  const [selectedFurnitureId, setSelectedFurnitureId] = useState<number | null>(null)
+
+  const fetchFurniture = useCallback(() => {
+    fetch('/api/furniture')
+      .then(r => r.json())
+      .then((items: Array<{ id: number; name: string; emoji: string; owned: boolean; equipped: boolean; x: number; y: number; w: number; h: number; floorOnly: boolean }>) => {
+        setPlacedItems(items.filter(f => f.owned && f.equipped).map(f => ({
+          id: f.id, name: f.name, emoji: f.emoji,
+          x: f.x, y: f.y, w: f.w, h: f.h, floorOnly: f.floorOnly,
+        })))
+      })
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => { fetchFurniture() }, [fetchFurniture])
 
   const floorY = WALL_RATIO * 100 + 5
   const [pos, setPos]         = useState({ x: 45, y: floorY })
@@ -287,6 +445,18 @@ export function SlimeRoom({
     : slime.status === 'slightly_happy' && !isIdle ? '/slime/jump.gif'
     : '/slime/idle.gif'
 
+  function updatePlacedItem(id: number, updates: Partial<PlacedFurniture>) {
+    setPlacedItems(prev => prev.map(i => i.id === id ? { ...i, ...updates } : i))
+  }
+
+  function saveLayout(id: number, pos: { x: number; y: number; w: number; h: number }) {
+    fetch(`/api/furniture/${id}/layout`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(pos),
+    }).catch(() => {})
+  }
+
   function handleSlimePointerDown(e: React.PointerEvent) {
     e.preventDefault()
     isDraggingRef.current = true
@@ -346,6 +516,7 @@ export function SlimeRoom({
   return (
     <div
       ref={roomRef}
+      onClick={() => setSelectedFurnitureId(null)}
       style={{
         position: 'relative',
         width: '100%',
@@ -355,6 +526,19 @@ export function SlimeRoom({
       }}
     >
       <RoomDecorations themeId={themeId} />
+
+      {/* ────── 配置済み家具 ────── */}
+      {placedItems.map(item => (
+        <PlacedItem
+          key={item.id}
+          item={item}
+          roomRef={roomRef}
+          selected={selectedFurnitureId === item.id}
+          onSelect={() => setSelectedFurnitureId(item.id)}
+          onChange={u => updatePlacedItem(item.id, u)}
+          onSave={pos => saveLayout(item.id, pos)}
+        />
+      ))}
 
       {/* ────── HUD: 上部 ────── */}
       <div style={{
@@ -518,8 +702,8 @@ export function SlimeRoom({
       )}
 
       {activePanel === 'furniture' && (
-        <PanelModal title="🪑 かぐショップ" onClose={() => setActivePanel(null)}>
-          <Shop coins={slime.coins} onUpdate={onUpdate ?? (() => {})} />
+        <PanelModal title="🪑 かぐショップ" onClose={() => { fetchFurniture(); setActivePanel(null) }}>
+          <Shop coins={slime.coins} onUpdate={() => { onUpdate?.(); fetchFurniture() }} />
         </PanelModal>
       )}
 
