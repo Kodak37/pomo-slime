@@ -40,7 +40,6 @@ interface Props {
 
 // ────────────── 定数 ──────────────
 const WALL_RATIO  = 0.65
-const FLOOR_RATIO = 0.35
 const FLOOR_MAX_Y = 88  // 床エリアの下限（%）。ボトムバー分を除く
 
 const SPEED: Record<SlimeStatus, number> = {
@@ -111,14 +110,7 @@ function Hat({ type }: { type: string }) {
 }
 
 // ────────────── 部屋デコレーション ──────────────
-function RoomDecorations({ themeId }: { themeId: string }) {
-  const windowPaneStyle: React.CSSProperties = {
-    flex: 1, background: themeId === 'ocean' ? 'rgba(80,180,255,0.18)'
-           : themeId === 'night'  ? 'rgba(160,100,255,0.18)'
-           : themeId === 'forest' ? 'rgba(60,160,60,0.18)'
-           : themeId === 'sakura' ? 'rgba(255,160,200,0.18)'
-           : 'rgba(255,200,100,0.18)',
-  }
+function RoomDecorations({ themeId: _themeId }: { themeId: string }) {
   return (
     <>
 
@@ -164,7 +156,7 @@ function PlacedItem({
   item, roomRef, selected, onSelect, onChange, onSave,
 }: {
   item: PlacedFurniture
-  roomRef: React.RefObject<HTMLDivElement>
+  roomRef: React.RefObject<HTMLDivElement | null>
   selected: boolean
   onSelect: () => void
   onChange: (u: Partial<PlacedFurniture>) => void
