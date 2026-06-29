@@ -590,7 +590,7 @@ export function SlimeRoom({
           left:   `${pos.x}%`,
           top:    `${pos.y}%`,
           transform: `translate(-50%, -100%) scale(${isDragging ? 1.15 : 1})`,
-          zIndex: isDragging ? 15 : 5,
+          zIndex: isDragging ? 20 : 10,
           transition: isDragging
             ? 'transform 0.1s'
             : 'left 0.06s linear, top 0.06s linear, transform 0.2s',
