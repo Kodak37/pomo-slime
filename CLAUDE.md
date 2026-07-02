@@ -31,9 +31,11 @@
 | フロントエンド | React + TypeScript + Vite |
 | スタイル | Tailwind CSS |
 | バックエンド | Go（REST API） |
-| DB | SQLite（`modernc.org/sqlite` ドライバ使用・CGO不要） |
+| DB | Supabase の PostgreSQL（`lib/pq` ドライバ） |
+| 認証 | Supabase Auth（フロント: supabase-js / バック: JWT検証） |
 | 通信 | REST API |
 | デプロイ | Render（Dockerマルチステージビルド） |
+| CI | GitHub Actions（`.github/workflows/ci.yml`） |
 
 ## ディレクトリ構成
 
@@ -41,8 +43,7 @@
 hoge/
 ├── backend/
 │   ├── main.go           # ルーティング・静的ファイル配信・PORT対応
-│   ├── handler/
-│   │   └── debug.go      # 開発用コインチャージAPI（本番でも残ってる、要削除）
+│   ├── handler/          # auth・slime・furniture 等のAPIハンドラー
 │   ├── model/
 │   └── db/
 ├── frontend/
@@ -81,11 +82,8 @@ feature/xxx → 機能単位で切る
 
 ### 現在のブランチ状態
 
-- `main` — 部屋ビュー実装前の安定版（まだデプロイ設定が入っていない）
-- `dev` — 最新（GIF化・部屋ビュー・Renderデプロイ設定済み）← **ここが最新**
-- `feature/slime-gif` — dev にマージ済み
-
-**→ main への最終マージがまだ。Renderでデプロイするには main を更新する必要あり。**
+- `main` — デプロイ対象（push すると Render が自動デプロイ）
+- `dev` — 開発作業場（main と同期済み）
 
 ### コミットメッセージ
 
@@ -101,6 +99,10 @@ style: UIの見た目調整
 1. `dev` から `feature/xxx` を切る
 2. 機能完成したら `dev` にマージ
 3. 全機能揃ったら `main` にマージ → Render が自動デプロイ
+
+main / dev への push と PR で CI（GitHub Actions）が自動実行される:
+- frontend: `npm ci` → oxlint → `tsc + vite build`
+- backend: `go build` → `go vet` → gofmt チェック → `go test`
 
 ## APIエンドポイント（実装済み）
 
@@ -144,15 +146,14 @@ PUT  /api/room               部屋テーマ変更
   2. GitHubリポジトリ接続（Kodak37/pomo-slime）
   3. Runtime: Docker（自動検出）/ Branch: main
   4. Create → 5〜10分でビルド完了
-- **注意**: Renderの無料プランはSQLiteが揮発（再デプロイでDBリセット）
-  - コイン・スライム状態・購入履歴などがリセットされる
-  - 本格運用にはRender Disk（有料）かPostgreSQLへの移行が必要
+- DB は Supabase（PostgreSQL）なので再デプロイでもデータは消えない
 
 ## TODO（作業再開時）
 
-- [ ] `dev` → `main` マージ＆プッシュ（Renderデプロイに必要）
-- [ ] ログイン機能（未実装。現状は全員が同じスライムを共有）
-- [ ] Renderの無料プランDB揮発問題の対処
+- [x] `dev` → `main` マージ＆プッシュ（2026-07-02 完了）
+- [x] ログイン機能（Supabase Auth で実装済み）
+- [x] DB揮発問題（Supabase の PostgreSQL へ移行して解消）
+- [x] CI導入（GitHub Actions、2026-07-02）
 
 ## 将来の拡張（MVPには含めない）
 
