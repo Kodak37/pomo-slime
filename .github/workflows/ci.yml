@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+  workflow_dispatch:
+
+# 同じブランチで連続pushしたら古い実行はキャンセル
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    name: フロントエンド（lint・型チェック・ビルド）
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: 依存関係インストール
+        run: npm ci
+      - name: Lint（oxlint）
+        run: npm run lint
+      - name: 型チェック＋ビルド（tsc -b && vite build）
+        run: npm run build
+
+  backend:
+    name: バックエンド（build・vet・gofmt・test）
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+      - name: ビルド
+        run: go build ./...
+      - name: go vet
+        run: go vet ./...
+      - name: gofmt チェック
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "gofmt されていないファイルがあります。'gofmt -w .' を実行してコミットしてください:"
+            echo "$unformatted"
+            exit 1
+          fi
+      - name: テスト
+        run: go test ./...
