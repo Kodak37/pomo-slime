@@ -24,15 +24,15 @@ export function PomodoroTimer({ onPomodoroComplete, pomodoroCount, onBreakStart 
 
   const workSec = durationMin * 60
 
-  useEffect(() => {
-    if (!running) setSeconds(phase === 'work' ? workSec : BREAK_SEC)
-  }, [durationMin])
+  // interval のコールバックから常に最新の handlePhaseEnd を呼ぶための ref
+  const handlePhaseEndRef = useRef(handlePhaseEnd)
+  useEffect(() => { handlePhaseEndRef.current = handlePhaseEnd })
 
   useEffect(() => {
     if (running) {
       intervalRef.current = setInterval(() => {
         setSeconds(prev => {
-          if (prev <= 1) { clearInterval(intervalRef.current!); handlePhaseEnd(); return 0 }
+          if (prev <= 1) { clearInterval(intervalRef.current!); handlePhaseEndRef.current(); return 0 }
           return prev - 1
         })
       }, 1000)
@@ -59,6 +59,13 @@ export function PomodoroTimer({ onPomodoroComplete, pomodoroCount, onBreakStart 
   function toggle() { setRunning(r => !r) }
   function reset()  { setRunning(false); setPhase('work'); setSeconds(workSec) }
 
+  // 設定ボタンは停止中の作業フェーズしか表示されないので、残り時間も一緒に更新してよい
+  function changeDuration(delta: number) {
+    const next = Math.min(60, Math.max(5, durationMin + delta))
+    setDurationMin(next)
+    setSeconds(next * 60)
+  }
+
   const minutes = Math.floor(seconds / 60)
   const secs    = seconds % 60
   const total   = phase === 'work' ? workSec : BREAK_SEC
@@ -81,11 +88,11 @@ export function PomodoroTimer({ onPomodoroComplete, pomodoroCount, onBreakStart 
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
           <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 13, color: 'var(--text-muted)' }}>作業時間を設定</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <button onClick={() => setDurationMin(m => Math.max(5, m - 5))} className="pixel-btn" style={{ padding: '8px 14px', fontSize: 14, background: '#1a0f06', color: 'var(--text-dim)', borderColor: 'var(--border)' }}>－</button>
+            <button onClick={() => changeDuration(-5)} className="pixel-btn" style={{ padding: '8px 14px', fontSize: 14, background: '#1a0f06', color: 'var(--text-dim)', borderColor: 'var(--border)' }}>－</button>
             <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 22, color: 'var(--text)', minWidth: 60, textAlign: 'center' }}>
               {durationMin}<span style={{ fontSize: 13 }}>分</span>
             </div>
-            <button onClick={() => setDurationMin(m => Math.min(60, m + 5))} className="pixel-btn" style={{ padding: '8px 14px', fontSize: 14, background: '#1a0f06', color: 'var(--text-dim)', borderColor: 'var(--border)' }}>＋</button>
+            <button onClick={() => changeDuration(5)} className="pixel-btn" style={{ padding: '8px 14px', fontSize: 14, background: '#1a0f06', color: 'var(--text-dim)', borderColor: 'var(--border)' }}>＋</button>
           </div>
           <div style={{ fontFamily: 'var(--pixel-font)', fontSize: 11, color: isOptimal ? 'var(--green)' : 'var(--accent)' }}>
             {isOptimal ? '✦ 最高効率（25分）' : `コイン効率: ${Math.round(mult * 100)}%`}

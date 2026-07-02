@@ -9,12 +9,13 @@ interface Props {
 // ─────────────────────────────────────────────
 // 食べ物キャッチ
 // ─────────────────────────────────────────────
+const FOODS = ['🍄','🍙','🍎','🫐','🌽','🍓','🥕','🍞']
+
 function CatchGame({ onResult }: { onResult: (coins: number) => void }) {
   const DURATION = 30
   const REWARD   = 3
 
   interface Food { id: number; x: number; y: number; emoji: string; speed: number }
-  const FOODS = ['🍄','🍙','🍎','🫐','🌽','🍓','🥕','🍞']
 
   const [phase, setPhase] = useState<'ready' | 'playing' | 'result'>('ready')
   const [items, setItems] = useState<Food[]>([])
@@ -119,7 +120,7 @@ function MoleGame({ onResult }: { onResult: (coins: number) => void }) {
 
   useEffect(() => {
     if (phase === 'result') onResult(scoreRef.current * REWARD)
-  }, [phase])
+  }, [phase, onResult, REWARD])
 
   function whack(i: number) {
     if (!moles[i]) return
@@ -178,15 +179,15 @@ function MoleGame({ onResult }: { onResult: (coins: number) => void }) {
 // ─────────────────────────────────────────────
 // 障害物避けゲーム
 // ─────────────────────────────────────────────
-function DodgeGame({ onResult }: { onResult: (coins: number) => void }) {
-  const W = 320, H = 160
-  const GROUND    = H - 4      // y of ground line (top)
-  const SLIME_X   = 44
-  const SLIME_H   = 32
-  const OBS_W     = 22
-  const GRAVITY   = 0.55
-  const JUMP_VY   = -10
+const W = 320, H = 160
+const GROUND    = H - 4      // y of ground line (top)
+const SLIME_X   = 44
+const SLIME_H   = 32
+const OBS_W     = 22
+const GRAVITY   = 0.55
+const JUMP_VY   = -10
 
+function DodgeGame({ onResult }: { onResult: (coins: number) => void }) {
   const [phase, setPhase]   = useState<'ready' | 'playing' | 'dead'>('ready')
   const [, setRender] = useState(0)
 
@@ -198,9 +199,9 @@ function DodgeGame({ onResult }: { onResult: (coins: number) => void }) {
   const rafId    = useRef(0)
   const phaseRef = useRef<'ready'|'playing'|'dead'>('ready')
 
-  function tryJump() {
+  const tryJump = useCallback(() => {
     if (slimeY.current >= GROUND - SLIME_H - 2) vy.current = JUMP_VY
-  }
+  }, [])
 
   useEffect(() => {
     if (phase !== 'playing') return
@@ -250,7 +251,7 @@ function DodgeGame({ onResult }: { onResult: (coins: number) => void }) {
 
     rafId.current = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(rafId.current)
-  }, [phase])
+  }, [phase, onResult])
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -261,7 +262,7 @@ function DodgeGame({ onResult }: { onResult: (coins: number) => void }) {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [])
+  }, [tryJump])
 
   function startGame() {
     slimeY.current    = GROUND - SLIME_H
