@@ -1,6 +1,9 @@
 package model
 
-import "pomodoro-slime/db"
+import (
+	"database/sql"
+	"pomodoro-slime/db"
+)
 
 type Furniture struct {
 	ID             int     `json:"id"`
@@ -48,41 +51,69 @@ func GetFurniture(userID string) ([]Furniture, error) {
 	return list, nil
 }
 
+// BuyFurniture は家具を購入する。BuyOutfit と同様に、1トランザクション内で
+// 「INSERT（所有権を取る）→ 残高チェック付き減算」を行い、原子性とレース耐性を確保する。
+// INSERT を所有権のゲートにすることで同一アイテムの二重課金を防ぎ、
+// 減算を `coins >= cost` の1文にまとめることで残高の二重使用(TOCTOU)を防ぐ。
 func BuyFurniture(userID string, id int) ([]Furniture, error) {
-	s, err := GetSlime(userID)
+	tx, err := db.DB.Begin()
 	if err != nil {
 		return nil, err
 	}
+	defer tx.Rollback()
+
 	var cost int
-	db.DB.QueryRow(`SELECT cost FROM furniture_catalog WHERE id = $1`, id).Scan(&cost)
-	if s.Coins < cost {
-		return GetFurniture(userID)
+	if err := tx.QueryRow(`SELECT cost FROM furniture_catalog WHERE id = $1`, id).Scan(&cost); err != nil {
+		return nil, err
 	}
-	var owned bool
-	db.DB.QueryRow(`SELECT EXISTS(SELECT 1 FROM user_furniture WHERE user_id = $1 AND furniture_id = $2)`, userID, id).Scan(&owned)
-	if owned {
-		return GetFurniture(userID)
-	}
-	db.DB.Exec(`UPDATE slimes SET coins = coins - $1 WHERE user_id = $2`, cost, userID)
-	// デフォルト位置をカタログから引き継ぐ
-	db.DB.Exec(`
+
+	// INSERT を所有権のゲートにする。デフォルト位置はカタログから引き継ぐ。
+	res, err := tx.Exec(`
 		INSERT INTO user_furniture (user_id, furniture_id, x, y, w, h)
 		SELECT $1, id, default_x, default_y, default_w, default_h
 		FROM furniture_catalog WHERE id = $2
 		ON CONFLICT DO NOTHING
 	`, userID, id)
+	if err != nil {
+		return nil, err
+	}
+	if n, err := res.RowsAffected(); err != nil {
+		return nil, err
+	} else if n != 1 {
+		return GetFurniture(userID) // 所有済み: 課金せず現状返却
+	}
+
+	res, err = tx.Exec(`UPDATE slimes SET coins = coins - $1 WHERE user_id = $2 AND coins >= $1`, cost, userID)
+	if err != nil {
+		return nil, err
+	}
+	if n, err := res.RowsAffected(); err != nil {
+		return nil, err
+	} else if n != 1 {
+		return GetFurniture(userID) // 残高不足 → ROLLBACK で INSERT も取消
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
 	return GetFurniture(userID)
 }
 
 func ToggleFurniture(userID string, id int) ([]Furniture, error) {
 	var equipped bool
-	db.DB.QueryRow(`SELECT equipped FROM user_furniture WHERE user_id = $1 AND furniture_id = $2`, userID, id).Scan(&equipped)
-	if equipped {
-		db.DB.Exec(`UPDATE user_furniture SET equipped = FALSE WHERE user_id = $1 AND furniture_id = $2`, userID, id)
-	} else {
-		db.DB.Exec(`UPDATE user_furniture SET equipped = TRUE WHERE user_id = $1 AND furniture_id = $2`, userID, id)
+	err := db.DB.QueryRow(`SELECT equipped FROM user_furniture WHERE user_id = $1 AND furniture_id = $2`, userID, id).Scan(&equipped)
+	if err == sql.ErrNoRows {
+		return GetFurniture(userID) // 未所持: 何もしない
 	}
-	UpdateHappinessBonus(userID)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := db.DB.Exec(`UPDATE user_furniture SET equipped = $1 WHERE user_id = $2 AND furniture_id = $3`, !equipped, userID, id); err != nil {
+		return nil, err
+	}
+	if err := UpdateHappinessBonus(userID); err != nil {
+		return nil, err
+	}
 	return GetFurniture(userID)
 }
 

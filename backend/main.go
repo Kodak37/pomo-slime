@@ -55,6 +55,7 @@ func main() {
 		r.Put("/api/slime/name", handler.UpdateName)
 		r.Post("/api/pomodoro/done", handler.PomodoroComplete)
 		r.Post("/api/feed", handler.Feed)
+		r.Post("/api/minigame/reward", handler.MinigameReward)
 
 		r.Get("/api/logs", handler.GetLogs)
 
