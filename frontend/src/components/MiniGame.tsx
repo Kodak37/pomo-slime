@@ -53,7 +53,8 @@ function CatchGame({ onResult }: { onResult: (coins: number) => void }) {
 
   function catchItem(id: number) { setItems(prev => prev.filter(it => it.id !== id)); setScore(s => s + 1) }
 
-  if (phase === 'result') { onResult(score * REWARD); return null }
+  // 生スコア（キャッチ数）をサーバーに渡す。コイン換算はサーバー任せ。
+  if (phase === 'result') { onResult(score); return null }
 
   return (
     <>
@@ -119,8 +120,9 @@ function MoleGame({ onResult }: { onResult: (coins: number) => void }) {
   }, [phase])
 
   useEffect(() => {
-    if (phase === 'result') onResult(scoreRef.current * REWARD)
-  }, [phase, onResult, REWARD])
+    // 生スコア（たたいた数）をサーバーに渡す。
+    if (phase === 'result') onResult(scoreRef.current)
+  }, [phase, onResult])
 
   function whack(i: number) {
     if (!moles[i]) return
@@ -239,8 +241,8 @@ function DodgeGame({ onResult }: { onResult: (coins: number) => void }) {
         if (sR > oL + 4 && sL < oR - 4 && sB > oT + 4 && sT < oB) {
           phaseRef.current = 'dead'
           setPhase('dead')
-          const coins = Math.min(60, Math.floor(ticks.current / 10))
-          onResult(coins)
+          // 生スコア（生存時間ベース）をサーバーに渡す。コイン換算・上限はサーバー任せ。
+          onResult(Math.floor(ticks.current / 10))
           return
         }
       }
@@ -337,36 +339,53 @@ type GameId = typeof GAME_LIST[number]['id']
 
 export function MiniGame({ onClose, onReward }: Props) {
   const [selected, setSelected] = useState<GameId | null>(null)
-  const [coins,    setCoins]    = useState<number | null>(null)
+  const [awarded,  setAwarded]  = useState<number | null>(null)
+  const claimingRef = useRef(false)
 
-  async function claimReward(c: number) {
-    if (c > 0) {
-      await apiFetch('/api/feed', {
+  // ゲーム終了時に生スコアをサーバーへ送り、コインはサーバー算出値を受け取る。
+  // 二重付与を防ぐため claimingRef で1ゲーム1回に制限する
+  // （CatchGame は result フェーズ中に onResult を繰り返し呼びうるため）。
+  async function handleResult(score: number) {
+    if (claimingRef.current || selected === null) return
+    claimingRef.current = true
+    try {
+      const res = await apiFetch('/api/minigame/reward', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cost: -c }),
+        body: JSON.stringify({ game: selected, score }),
       })
+      if (res.ok) {
+        const data = await res.json()
+        setAwarded(typeof data.awarded === 'number' ? data.awarded : 0)
+      } else {
+        setAwarded(0)
+      }
+    } catch {
+      setAwarded(0)
     }
-    onReward(c)
-    onClose()
   }
 
-  function handleResult(c: number) {
-    setCoins(c)
+  function startGame(id: GameId) {
+    claimingRef.current = false
+    setSelected(id)
+  }
+
+  function backToLobby() {
+    claimingRef.current = false
+    setSelected(null)
   }
 
   return (
     <div style={{ position:'fixed', inset:0, zIndex:200, background:'rgba(0,0,0,0.82)', display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
       <div className="pixel-box" style={{ width:'100%', maxWidth:400, padding:24 }}>
 
-        {/* ────── 結果画面 ────── */}
-        {coins !== null ? (
+        {/* ────── 結果画面（コインはサーバー算出値を表示・付与済み） ────── */}
+        {awarded !== null ? (
           <div style={{ textAlign:'center', display:'flex', flexDirection:'column', gap:16 }}>
             <div style={{ fontFamily:'var(--pixel-font)', fontSize:13, color:'var(--accent)' }}>ゲーム終了！</div>
-            <div style={{ fontFamily:'var(--pixel-font)', fontSize:30, color:'var(--accent)' }}>🪙 {coins}</div>
+            <div style={{ fontFamily:'var(--pixel-font)', fontSize:30, color:'var(--accent)' }}>🪙 {awarded}</div>
             <div style={{ fontFamily:'var(--pixel-font)', fontSize:10, color:'var(--text-dim)' }}>コイン獲得！</div>
             <div style={{ display:'flex', gap:10, justifyContent:'center' }}>
-              <button onClick={() => claimReward(coins)} className="pixel-btn" style={{ padding:'12px 24px', fontSize:11, background:'var(--accent)', color:'#000', borderColor:'var(--accent)' }}>うけとる！</button>
+              <button onClick={() => { onReward(awarded); onClose() }} className="pixel-btn" style={{ padding:'12px 24px', fontSize:11, background:'var(--accent)', color:'#000', borderColor:'var(--accent)' }}>うけとる！</button>
               <button onClick={onClose} className="pixel-btn" style={{ padding:'12px 16px', fontSize:10 }}>とじる</button>
             </div>
           </div>
@@ -376,7 +395,7 @@ export function MiniGame({ onClose, onReward }: Props) {
             <div style={{ fontFamily:'var(--pixel-font)', fontSize:13, color:'var(--accent)', textAlign:'center', marginBottom:20 }}>🎮 ゲームえらんで！</div>
             <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
               {GAME_LIST.map(g => (
-                <button key={g.id} onClick={() => setSelected(g.id)} className="pixel-btn" style={{ padding:'14px 20px', fontSize:12, textAlign:'left', display:'flex', flexDirection:'column', gap:6 }}>
+                <button key={g.id} onClick={() => startGame(g.id)} className="pixel-btn" style={{ padding:'14px 20px', fontSize:12, textAlign:'left', display:'flex', flexDirection:'column', gap:6 }}>
                   <span>{g.label}</span>
                   <span style={{ fontSize:9, color:'var(--text-muted)', fontFamily:'var(--pixel-font)' }}>{g.desc}</span>
                 </button>
@@ -391,7 +410,7 @@ export function MiniGame({ onClose, onReward }: Props) {
               <div style={{ fontFamily:'var(--pixel-font)', fontSize:11, color:'var(--accent)' }}>
                 {GAME_LIST.find(g => g.id === selected)?.label}
               </div>
-              <button onClick={() => setSelected(null)} className="pixel-btn" style={{ padding:'4px 10px', fontSize:9 }}>← もどる</button>
+              <button onClick={backToLobby} className="pixel-btn" style={{ padding:'4px 10px', fontSize:9 }}>← もどる</button>
             </div>
             {selected === 'catch' && <CatchGame onResult={handleResult} />}
             {selected === 'mole'  && <MoleGame  onResult={handleResult} />}
