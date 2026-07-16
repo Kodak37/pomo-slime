@@ -35,9 +35,10 @@ func UpdateName(w http.ResponseWriter, r *http.Request) {
 
 func PomodoroComplete(w http.ResponseWriter, r *http.Request) {
 	uid := GetUserID(r)
+	// durationMin のみセッション長として受け取る。報酬に効く pomodoroCount は
+	// サーバー保持の値を使うため、クライアント送信値は無視する。
 	var body struct {
-		PomodoroCount int `json:"pomodoroCount"`
-		DurationMin   int `json:"durationMin"`
+		DurationMin int `json:"durationMin"`
 	}
 	json.NewDecoder(r.Body).Decode(&body)
 	if body.DurationMin <= 0 {
@@ -46,9 +47,9 @@ func PomodoroComplete(w http.ResponseWriter, r *http.Request) {
 	if body.DurationMin > 120 {
 		body.DurationMin = 120
 	}
-	s, err := model.AddPomodoroCoins(uid, body.PomodoroCount, body.DurationMin)
+	s, err := model.AddPomodoroCoins(uid, body.DurationMin)
 	if err != nil {
-		if err.Error() == "rate limit" {
+		if err == model.ErrRateLimit {
 			http.Error(w, "too many requests", http.StatusTooManyRequests)
 			return
 		}
@@ -60,16 +61,44 @@ func PomodoroComplete(w http.ResponseWriter, r *http.Request) {
 
 func Feed(w http.ResponseWriter, r *http.Request) {
 	uid := GetUserID(r)
+	// cost は餌の選択にのみ使う。実際のコスト・空腹回復量はサーバー定数で確定させる。
 	var body struct {
 		Cost int `json:"cost"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Cost <= 0 {
-		body.Cost = 5
-	}
+	json.NewDecoder(r.Body).Decode(&body)
 	s, err := model.Feed(uid, body.Cost)
 	if err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 	json.NewEncoder(w).Encode(s)
+}
+
+func MinigameReward(w http.ResponseWriter, r *http.Request) {
+	uid := GetUserID(r)
+	// クライアントからはゲームIDと生スコアのみ受け取る。コイン額は受け取らない。
+	var body struct {
+		Game  string `json:"game"`
+		Score int    `json:"score"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, "invalid body", http.StatusBadRequest)
+		return
+	}
+	s, awarded, err := model.ClaimMinigameReward(uid, body.Game, body.Score)
+	if err != nil {
+		switch err {
+		case model.ErrUnknownGame:
+			http.Error(w, "unknown game", http.StatusBadRequest)
+		case model.ErrMinigameCooldown:
+			http.Error(w, "too many requests", http.StatusTooManyRequests)
+		default:
+			http.Error(w, "internal error", http.StatusInternalServerError)
+		}
+		return
+	}
+	json.NewEncoder(w).Encode(struct {
+		Awarded int          `json:"awarded"`
+		Slime   *model.Slime `json:"slime"`
+	}{awarded, s})
 }

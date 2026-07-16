@@ -19,7 +19,33 @@ func Init() error {
 	if err != nil {
 		return err
 	}
-	return createTables()
+	if err := createTables(); err != nil {
+		return err
+	}
+	return migrate()
+}
+
+// migrate は既存テーブルに対して冪等にカラム・制約を追加する。
+// CREATE TABLE IF NOT EXISTS では既存テーブルに制約が付かないため、
+// ALTER TABLE を使い、二重適用時のエラー（duplicate_object）は無視する。
+func migrate() error {
+	_, err := DB.Exec(`
+		-- ミニゲーム報酬のクールダウン判定に使う最終請求時刻
+		ALTER TABLE slimes ADD COLUMN IF NOT EXISTS last_minigame_at TIMESTAMPTZ;
+
+		-- コインは非負（防御の最終ライン）
+		DO $$ BEGIN
+			ALTER TABLE slimes ADD CONSTRAINT slimes_coins_nonneg CHECK (coins >= 0);
+		EXCEPTION WHEN duplicate_object THEN NULL;
+		END $$;
+
+		-- 空腹度は 0..100
+		DO $$ BEGIN
+			ALTER TABLE slimes ADD CONSTRAINT slimes_hunger_range CHECK (hunger >= 0 AND hunger <= 100);
+		EXCEPTION WHEN duplicate_object THEN NULL;
+		END $$;
+	`)
+	return err
 }
 
 func createTables() error {
