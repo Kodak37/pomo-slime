@@ -111,12 +111,9 @@ function Hat({ type }: { type: string }) {
 }
 
 // ────────────── 部屋デコレーション ──────────────
-function RoomDecorations({ themeId: _themeId }: { themeId: string }) {
+function RoomDecorations() {
   return (
     <>
-
-
-
       {/* 壁と床の境界（巾木）*/}
       <div style={{
         position: 'absolute', left: 0, right: 0,
@@ -447,11 +444,10 @@ export function SlimeRoom({
     }
   }, [target, speed, pickTarget, floorY])
 
-  const activeGif = isIdle
-    ? '/slime/idle.gif'
-    : (slime.status === 'dying' || slime.status === 'hungry') ? '/slime/idle.gif'
-    : slime.status === 'happy' ? '/slime/move.gif'
-    : slime.status === 'slightly_happy' && !isIdle ? '/slime/jump.gif'
+  // idle 中・dying・hungry は待機。happy は歩き、slightly_happy はジャンプ。
+  const activeGif =
+    !isIdle && slime.status === 'happy'          ? '/slime/move.gif'
+    : !isIdle && slime.status === 'slightly_happy' ? '/slime/jump.gif'
     : '/slime/idle.gif'
 
   function updatePlacedItem(id: number, updates: Partial<PlacedFurniture>) {
@@ -534,7 +530,7 @@ export function SlimeRoom({
         userSelect: 'none',
       }}
     >
-      <RoomDecorations themeId={themeId} />
+      <RoomDecorations />
 
       {/* ────── 配置済み家具 ────── */}
       {placedItems.map(item => (

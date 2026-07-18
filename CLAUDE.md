@@ -55,9 +55,7 @@ hoge/
 │   ├── src/
 │   │   ├── components/
 │   │   │   ├── SlimeRoom.tsx    # 部屋ビュー（スライム徘徊・HUD）★メイン
-│   │   │   ├── Slime.tsx        # スライム単体コンポーネント（設定タブ等で使用）
 │   │   │   ├── PomodoroTimer.tsx
-│   │   │   ├── FeedPanel.tsx
 │   │   │   ├── Customization.tsx
 │   │   │   ├── Shop.tsx
 │   │   │   ├── RoomSettings.tsx

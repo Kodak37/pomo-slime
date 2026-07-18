@@ -177,18 +177,12 @@ func feedFood(cost int) (int, int) {
 func Feed(userID string, reqCost int) (*Slime, error) {
 	cost, gain := feedFood(reqCost)
 
-	res, err := db.DB.Exec(`
+	// 残高不足（RowsAffected==0）でも成功時でも、最新のスライムを返すだけでよい。
+	if _, err := db.DB.Exec(`
 		UPDATE slimes SET hunger = LEAST(100, hunger + $1), coins = coins - $2, updated_at = NOW()
 		WHERE user_id = $3 AND coins >= $2
-	`, gain, cost, userID)
-	if err != nil {
+	`, gain, cost, userID); err != nil {
 		return nil, err
-	}
-	// RowsAffected が 0 の場合は残高不足。現状のスライムを返すだけにする。
-	if n, err := res.RowsAffected(); err != nil {
-		return nil, err
-	} else if n == 0 {
-		return GetSlime(userID)
 	}
 	return GetSlime(userID)
 }
